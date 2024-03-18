@@ -21,3 +21,6 @@ python divvy_json2excel.py
 ```
 
 3. merge the metadata from the Excel worksheet
+```python
+python merge_excel.py
+```
