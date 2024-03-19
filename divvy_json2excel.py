@@ -15,4 +15,4 @@ df = pd.DataFrame([(d['stationName'], d['location']['lat'], d['location']['lng']
 
 
 # 将数据写入Excel文件
-df.to_excel("station_direction_20240316.xlsx", index=False)
+df.to_excel("station_location_20240316.xlsx", index=False)
