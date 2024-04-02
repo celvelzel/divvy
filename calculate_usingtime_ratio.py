@@ -54,9 +54,12 @@ for i, file in enumerate(tqdm(files), start=1):
     # df['ended_at'] = pd.to_datetime(df['ended_at']).dt.strftime('%Y/%m/%d %H:%M:%S')
 
     # 2. 计算每一行的 end_time 列和 start_time 列之间的时间差，并将结果存储在 using time 列
+    # df['using time'] = (pd.to_datetime(df['end_time']) - pd.to_datetime(df['start_time'])).total_seconds()
+    df['end_time'] = pd.to_datetime(df['end_time'])
+    df['start_time'] = pd.to_datetime(df['start_time'])
 
-    df['using time'] = (pd.to_datetime(df['end_time']) - pd.to_datetime(df['start_time'])).total_seconds()
-
+    # 使用 apply() 函数将 total_seconds() 应用于整个 Series
+    df['using time'] = (df['end_time'] - df['start_time']).apply(lambda x: x.total_seconds())
 
     # df['using time'] = (pd.to_datetime(df['ended_at']) - pd.to_datetime(df['started_at'])).dt.seconds
 
@@ -66,7 +69,7 @@ for i, file in enumerate(tqdm(files), start=1):
         if row.name < df.shape[0] - 1 and df.at[row.name + 1, 'bikeid'] == row['bikeid'] and df.at[
             row.name + 1, "from_station_id"] == row["to_station_id"]:
             # 计算时间差并以秒为单位返回
-            return (pd.to_datetime(df.at[row.name + 1, 'start_time']) - pd.to_datetime(row['end_time'])).seconds
+            return (pd.to_datetime(df.at[row.name + 1, 'start_time']) - pd.to_datetime(row['end_time'])).total_seconds()
         else:
             # 如果没有满足条件的记录，则返回None
             return None
