@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/divvy_datachallenge_2013_toolkit.iml" filepath="$PROJECT_DIR$/.idea/divvy_datachallenge_2013_toolkit.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/divvy.iml" filepath="$PROJECT_DIR$/.idea/divvy.iml" />
     </modules>
   </component>
 </project>
