@@ -1,13 +1,20 @@
 import pandas as pd
 import os
-import concurrent.futures
 from tqdm.auto import tqdm
 
+# 设置保留小数点后的位数
+DECIMAL_PLACES = 20
+
+# 定义时间阈值
+THRESHOLD_24_HOURS = 24 * 3600
+THRESHOLD_48_HOURS = 48 * 3600
+
 # 指定文件夹路径
-folder_path = 'C:\\Users\\celcelcel\\Desktop\\test'  # 替换为存着所有你要处理的excel文件的的文件夹路径
+folder_path = 'C:\\Users\\celcelcel\\Desktop\\test1'  # 替换为存着所有你要处理的excel文件的的文件夹路径
 
 # 获取文件夹中所有 Excel 文件的列表
 files = [file for file in os.listdir(folder_path) if file.endswith('.xlsx')]
+tqdm.write(f"🐦‍:我开始排序 {len(files)} 个文件")
 
 # 对每个excel文件根据bikeid排序
 for file in tqdm(files):
@@ -18,21 +25,16 @@ for file in tqdm(files):
     df = pd.read_excel(file_path)
 
     # 根据bikeid对整个表格排序
-    df = df.sort_values(by=['bikeid'])
+    df = df.sort_values(by=['bikeid', 'start_time'])
 
     # 保存排序后的表格
     df.to_excel(file_path, index=False)
 
-# 设置保留小数点后的位数
-DECIMAL_PLACES = 20
+    tqdm.write(f"🐦‍:我正在排序 {file}")
 
-# 定义时间阈值
-THRESHOLD_24_HOURS = 24 * 3600
-THRESHOLD_48_HOURS = 48 * 3600
-
-
+tqdm.write(f"🐦‍:我开始处理 {len(files)} 个文件")
 # 遍历所有文件,使用tqdm进度条
-def process_file(file):
+for i, file in enumerate(tqdm(files), start=1):
     # 构建完整的文件路径
     file_path = os.path.join(folder_path, file)
 
@@ -53,8 +55,9 @@ def process_file(file):
 
     # 2. 计算每一行的 end_time 列和 start_time 列之间的时间差，并将结果存储在 using time 列
     df['using time'] = (pd.to_datetime(df['end_time']) - pd.to_datetime(df['start_time'])).dt.seconds
-    # df['using time'] = (pd.to_datetime(df['ended_at']) - pd.to_datetime(df['started_at'])).dt.seconds
 
+
+    # df['using time'] = (pd.to_datetime(df['ended_at']) - pd.to_datetime(df['started_at'])).dt.seconds
 
     # 3. 计算相邻两笔相同自行车id，到达站id等于出发站id的骑行记录之间的的时间差
     def calculate_time_difference(row):
@@ -66,6 +69,7 @@ def process_file(file):
         else:
             # 如果没有满足条件的记录，则返回None
             return None
+
 
     # def calculate_time_difference(row):
     #     # 检查当前行是否为最后一行，且下一行的bikeid与当前行相同，from_station_id与当前行的to_station_id相同
@@ -79,6 +83,7 @@ def process_file(file):
 
     df['non-using time'] = df.apply(calculate_time_difference, axis=1)
 
+
     # 4. 创建一个函数来检查 non-using time 是否超过特定时间
     def check_time_24(row):
         if row['non-using time'] > (THRESHOLD_24_HOURS):
@@ -86,11 +91,13 @@ def process_file(file):
         else:
             return row['non-using time']
 
+
     def check_time_48(row):
         if row['non-using time'] > (THRESHOLD_48_HOURS):
             return 0
         else:
             return row['non-using time']
+
 
     # 5. 应用函数到每一行
     df['non-using time<24hrs'] = df.apply(check_time_24, axis=1)
@@ -119,18 +126,10 @@ def process_file(file):
     df.at[1, 'usingTime_ratio_TH=48'] = using_time_ratio_TH48
 
     # 9. 保存更新后的数据框到新的 Excel 文件
-    output_file_path = os.path.join(folder_path, f"{os.path.splitext(file)[0]}_final.xlsx")
+    output_file_path = os.path.join(folder_path, f"{os.path.splitext(file)[0]}_processed.xlsx")
     df.to_excel(output_file_path, index=False)
 
     # 进度条显示当前处理到的文件名以及预计剩余时间
-    tqdm.write(f"🐦我正在处理文件 : {file}🐦")
-
-
-# 使用tqdm显示多线程进度条
-with concurrent.futures.ThreadPoolExecutor() as executor:
-    # 使用 tqdm 的 thread_map 方法替换 map 方法
-    with tqdm(total=len(files)) as pbar:
-        for _ in executor.map(process_file, files):
-            pbar.update(1)  # 每处理完一个文件就更新进度条
+    tqdm.write(f"🐦:我正在处理文件 {i}/{len(files)} : {file}")
 
 print("All Excel files have been processed.")
