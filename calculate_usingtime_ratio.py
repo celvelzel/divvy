@@ -54,7 +54,8 @@ for i, file in enumerate(tqdm(files), start=1):
     # df['ended_at'] = pd.to_datetime(df['ended_at']).dt.strftime('%Y/%m/%d %H:%M:%S')
 
     # 2. 计算每一行的 end_time 列和 start_time 列之间的时间差，并将结果存储在 using time 列
-    df['using time'] = (pd.to_datetime(df['end_time']) - pd.to_datetime(df['start_time'])).dt.seconds
+
+    df['using time'] = (pd.to_datetime(df['end_time']) - pd.to_datetime(df['start_time'])).total_seconds()
 
 
     # df['using time'] = (pd.to_datetime(df['ended_at']) - pd.to_datetime(df['started_at'])).dt.seconds
