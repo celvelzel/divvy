@@ -90,14 +90,14 @@ for i, file in enumerate(tqdm(files), start=1):
 
     # 4. 创建一个函数来检查 non-using time 是否超过特定时间
     def check_time_24(row):
-        if row['non-using time'] > (THRESHOLD_24_HOURS):
+        if row['non-using time'] > THRESHOLD_24_HOURS:
             return 0
         else:
             return row['non-using time']
 
 
     def check_time_48(row):
-        if row['non-using time'] > (THRESHOLD_48_HOURS):
+        if row['non-using time'] > THRESHOLD_48_HOURS:
             return 0
         else:
             return row['non-using time']
