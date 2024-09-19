@@ -1,8 +1,9 @@
 import os
 import pandas as pd
+from tqdm import tqdm
 
 # 指定文件夹路径
-folder_path = 'C:\\Users\\celcelcel\\Downloads\\divvy'
+folder_path = 'C:\\Users\\86135\\Downloads\\sample'
 
 # 获取文件夹中的所有CSV文件
 csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
@@ -14,6 +15,7 @@ remaining_data = pd.DataFrame()
 # 创建输出文件夹
 output_folder = '按周划分的文件'
 os.makedirs(output_folder, exist_ok=True)
+
 
 # 定义一个函数来保存按周划分的数据
 def save_weekly_data(grouped_data, output_folder):
@@ -27,16 +29,34 @@ def save_weekly_data(grouped_data, output_folder):
         else:
             group.to_csv(output_file, index=False)
 
+
+def parse_data(data_series):
+    data_formats = ['%Y/%m/%d %H:%M', '%m/%d/%Y %H:%M']
+    for fmt in data_formats:
+        try:
+            return pd.to_datetime(data_series, format=fmt)
+        except ValueError:
+            continue
+        raise ValueError("No Valid date format")
+
+
 # 逐个文件处理数据
-for file in csv_files:
+for file in tqdm(csv_files):
     file_path = os.path.join(folder_path, file)
 
     # 读取当前文件的数据
     current_data = pd.read_csv(file_path)
-    current_data['starttime'] = pd.to_datetime(current_data['starttime'], format='%Y/%m/%d %H:%M')
-
-    # 过滤掉缺失的starttime数据
-    current_data = current_data.dropna(subset=['starttime'])
+    # 如果文件中有starttime这一列
+    if 'starttime' in current_data.columns:
+        current_data['starttime'] = parse_data(current_data['starttime'])
+        # 过滤掉缺失的starttime数据
+        current_data = current_data.dropna(subset=['starttime'])
+    else:
+        if 'start_time' in current_data.columns:
+            current_data['starttime'] = parse_data(current_data['start_time'])
+            current_data = current_data.dropna(subset=['starttime'])
+        else:
+            print(f"starttime和start_time都没有找到 in{file_path}")
 
     # 如果有跨文件的一周数据，将其与当前数据拼接
     if not remaining_data.empty:
