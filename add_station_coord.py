@@ -5,12 +5,17 @@ from tqdm import tqdm
 # 指定文件夹路径
 folder_path = 'E:\\作品集\\三\\数据\\新建文件夹'
 
+# 创建输出文件夹
+output_folder = os.path.join(folder_path, '添加站点坐标后的文件')
+os.makedirs(output_folder, exist_ok=True)
+
 # 获取文件夹中的所有CSV文件
 csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
 
 # 读取站点数据并将其存入字典中
-stations_df = pd.read_csv('stations.csv')  # 站点数据文件
+stations_df = pd.read_csv(os.path.join(folder_path, 'stations.csv'))  # 站点数据文件
 station_dict = dict(zip(stations_df['station_name'], zip(stations_df['longitude'], stations_df['latitude'])))
+
 
 # 函数：处理单个骑行数据文件
 def process_file(file_path, station_dict):
@@ -27,13 +32,16 @@ def process_file(file_path, station_dict):
     rides_df['latitude'] = rides_df['station_name'].map(lambda x: station_dict.get(x, (None, None))[1])
 
     # 保存处理后的文件
-    output_file = os.path.splitext(file_path)[0] + '_with_coordinates.csv'
+    # 生成唯一的输出文件名
+    output_file = os.path.join(output_folder, os.path.basename(file_path).replace('.csv', '_with_coordinates.csv'))
     rides_df.to_csv(output_file, index=False)
     print(f"{file_path} 处理完成，已保存至 {output_file}")
 
+
 # 处理多个骑行数据文件
 def process_multiple_files(files, station_dict):
-    for file_path in tqdm(files):
+    for file in tqdm(files):
+        file_path = os.path.join(folder_path, file)
         process_file(file_path, station_dict)
 
 
