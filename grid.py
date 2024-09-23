@@ -23,7 +23,7 @@ chicago_boundary_utm = chicago_boundary.to_crs(epsg=32616)
 min_x, min_y, max_x, max_y = chicago_boundary_utm.total_bounds
 
 # 3. 按米划分网格
-grid_size = 100  # 100米
+grid_size = 1000  # 100米
 
 # 生成网格
 x_coords = list(range(int(min_x), int(max_x), grid_size))
@@ -46,6 +46,12 @@ grid = gpd.GeoDataFrame({'geometry': polygons}, crs="EPSG:4326")  # 4326 是 WGS
 
 # 剔除不在芝加哥边界内的网格
 grid_within_chicago = gpd.overlay(grid, chicago_boundary_utm, how='intersection')
+
+# 4. 导出裁剪后的网格为 Shapefile
+grid_within_chicago.to_file("chicago_grid_100m.shp", driver="ESRI Shapefile")
+
+print("Shapefile has been exported as 'chicago_grid_100m.shp'.")
+
 
 # 2.读取 Excel 数据
 # 收集所有 Excel 文件的路径
