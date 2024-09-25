@@ -1,14 +1,20 @@
-import datetime
+import geopandas as gpd
 import pandas as pd
 
-now = datetime.datetime.now()
-print(now)
+# # 读取 POI 数据
+# poi_data = pd.read_csv("data/2013.9_with_coordinates.csv")  # 假设 POI 数据在 CSV 中
+#
+# # 创建 GeoDataFrame，确保使用 EPSG:4326（WGS84 经纬度坐标系）
+# poi_gdf = gpd.GeoDataFrame(poi_data,
+#                            geometry=gpd.points_from_xy(poi_data.longitude, poi_data.latitude),
+#                            crs="EPSG:4326")
 
-t1 = "2019-09-12 13:10:21"
-t2 = "2019/08/03 17:17:23"
+# 检查 POI 数据的 CRS
+# EPSG:4326
+# print(poi_gdf.crs)
 
-print(pd.to_datetime(t1))
-using_time = (pd.to_datetime(t2) - pd.to_datetime(t1)).total_seconds()
-print(using_time)
+# 读取 Shapefile 文件
+shapefile_gdf = gpd.read_file("data/芝加哥边界.shp")
 
-
+# 检查 Shapefile 的 CRS
+print(shapefile_gdf.crs)

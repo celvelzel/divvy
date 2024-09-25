@@ -2,7 +2,7 @@ import pandas as pd
 import json
 
 # 从外部JSON文件读取数据
-with open('station_20240316.json', 'r', encoding='utf-8') as file:
+with open('data/station_20240316.json', 'r', encoding='utf-8') as file:
     data = json.load(file)
 
 # 将数据转换为DataFrame
