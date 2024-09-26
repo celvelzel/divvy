@@ -14,7 +14,8 @@ poi_gdf = gpd.GeoDataFrame(poi_data,
 # print(poi_gdf.crs)
 
 # 读取 Shapefile 文件
-shapefile_gdf = gpd.read_file("data/芝加哥边界.shp")
+shapefile_gdf = gpd.read_file("data/chicago/芝加哥边界.shp").to_crs('EPSG:4326')
+# EPSG:3435
 
 # 检查 Shapefile 的 CRS
 print(shapefile_gdf.crs)
