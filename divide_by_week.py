@@ -3,7 +3,7 @@ import pandas as pd
 from tqdm import tqdm
 
 # 指定文件夹路径
-folder_path = 'E:\\作品集\\三\\数据\\新建文件夹'
+folder_path = 'data\\monthly_data'
 
 # 获取文件夹中的所有CSV文件
 csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
@@ -60,7 +60,11 @@ for file in tqdm(csv_files):
                 current_data['starttime'] = parse_data(current_data['started_time'])
                 current_data = current_data.dropna(subset=['starttime'])
             else:
-                print(f"starttime,start_time和started_time都没有找到 in{file_path}")
+                if 'started_at' in current_data.columns:
+                    current_data['starttime'] = parse_data(current_data['started_at'])
+                    current_data = current_data.dropna(subset=['starttime'])
+                else:
+                    print(f"starttime,start_time,started_time和started_at都没有找到 in{file_path}")
 
     # 如果有跨文件的一周数据，将其与当前数据拼接
     if not remaining_data.empty:

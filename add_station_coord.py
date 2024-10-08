@@ -2,6 +2,8 @@ import pandas as pd
 import os
 from tqdm import tqdm
 
+
+
 # 指定文件夹路径
 trips_folder_path = 'data\\trips'
 # 站点信息文件夹名称
@@ -10,6 +12,10 @@ stations_folder_path = 'data\\stations'
 station_fields = ['name', 'latitude', 'longitude']
 # 行程文件站点字段名称
 trip_fields = 'from_station_name'
+
+
+
+
 
 # 创建输出文件夹
 output_folder = os.path.join(trips_folder_path, '添加站点坐标后的文件')
