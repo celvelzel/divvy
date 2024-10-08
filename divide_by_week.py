@@ -39,6 +39,9 @@ def parse_data(data_series):
             continue
         raise ValueError("No Valid date format")
 
+def sort_data_by_time(data):
+    return data.sort_values(by='starttime')
+
 
 # 逐个文件处理数据
 for file in tqdm(csv_files):
@@ -65,6 +68,8 @@ for file in tqdm(csv_files):
                     current_data = current_data.dropna(subset=['starttime'])
                 else:
                     print(f"starttime,start_time,started_time和started_at都没有找到 in{file_path}")
+    # 根据starttime这一列的数据对所有记录按照时间顺序排序
+    current_data = sort_data_by_time(current_data)
 
     # 如果有跨文件的一周数据，将其与当前数据拼接
     if not remaining_data.empty:
