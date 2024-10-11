@@ -9,23 +9,31 @@ folder_path = 'data/grid_test'
 
 # 1. 划分网格
 # 读取芝加哥边界的 Shapefile
-chicago_boundary = gpd.read_file('data/chicago/芝加哥边界.shp')
+chicago_boundary = gpd.read_file('data/chicago/simple_chicago.shp')
 
 # 确保边界文件是 WGS84 坐标系 (EPSG:4326)
 if chicago_boundary.crs != "EPSG:4326":
     chicago_boundary = chicago_boundary.to_crs("EPSG:4326")
 
 # 转换坐标系为适合距离计算的 UTM 投影
-chicago_boundary_utm = chicago_boundary.to_crs(epsg=32616)
+chicago_boundary_utm = chicago_boundary.to_crs(epsg=3857)
+
+# 使用 unary_union 合并所有多边形，保留外部边界
+# 这将创建一个包含外部边界的单一多边形
+chicago_boundary_tum = chicago_boundary_utm.union_all()
+
 
 # 获取芝加哥的边界范围
+# 返回 GeoDataFrame 中几何对象的总边界，格式为 (min_x, min_y, max_x, max_y)，分别表示几何对象的最小和最大坐标值
+# 获取芝加哥边界的最小和最大 x、y 坐标，用于生成网格
 min_x, min_y, max_x, max_y = chicago_boundary_utm.total_bounds
 
 # 按米划分网格
-grid_size = 100  # 100米
+grid_size = 500  # 单位为米
 
 # 生成网格
 polygons = []
+# 通过定义每个网格四个顶点的坐标，创建一个 100 米大小的多边形（网格单元）
 x_coords = list(range(int(min_x), int(max_x), grid_size))
 y_coords = list(range(int(min_y), int(max_y), grid_size))
 
@@ -37,12 +45,23 @@ for x in x_coords:
 print(f"Total grid polygons created: {len(polygons)}")
 
 # 创建 GeoDataFrame 保存网格
-grid = gpd.GeoDataFrame({'geometry': polygons}, crs="EPSG:32616")
-
-# 剔除不在芝加哥边界内的网格
-grid_within_chicago = gpd.overlay(grid, chicago_boundary_utm, how='intersection')
+# 使用生成的多边形创建一个包含所有网格的 GeoDataFrame
+grid = gpd.GeoDataFrame({'geometry': polygons}, crs="EPSG:3857")
 
 print("generate grid finished")
+
+# 将生成的网格导出为 Shapefile 以便在 QGIS 中检查
+grid.to_file("output/python_output_grid.shp", driver="ESRI Shapefile")
+
+
+# 剔除不在芝加哥边界内的网格
+# 用于执行两个 GeoDataFrame 之间的几何叠加操作（如交集）。该函数允许在两个几何集合之间进行空间操作
+grid_within_chicago = gpd.overlay(grid, chicago_boundary_utm, how='intersection')
+
+print("intersection finished")
+
+# 导出裁剪后的网格为 Shapefile
+grid_within_chicago.to_file("output/python_output_grid_within_chicago.shp", driver="ESRI Shapefile")
 
 # 2. 读取 Excel 数据
 # 收集所有 Excel 文件的路径
@@ -61,8 +80,11 @@ for file in tqdm(excel_files):
                                geometry=gpd.points_from_xy(poi_data.longitude, poi_data.latitude),
                                crs="EPSG:4326")
 
+    # 将 POI 数据导出为 GeoJSON 以便在 QGIS 中加载
+    poi_gdf.to_file("output/python_output_poi_data.shp", driver="ESRI Shapefile")
+
     # 将 POI 数据转换为 UTM 坐标系
-    poi_gdf_utm = poi_gdf.to_crs(epsg=32616)
+    poi_gdf_utm = poi_gdf.to_crs(epsg=3857)
 
     # 在空间连接前
     print("Starting spatial join...")
@@ -71,6 +93,9 @@ for file in tqdm(excel_files):
     # 在空间连接后
     print(f"Spatial join completed. Number of POIs joined: {len(joined)}")
 
+    # 导出空间连接后的结果为 Shapefile
+    joined.to_file(f"output/{os.path.splitext(os.path.basename(file))[0]}_python_output_joined_poi_grid.shp", driver="ESRI Shapefile")
+
     # 统计每个网格中的 POI 数量
     poi_counts = joined['index_right'].value_counts()  # 统计网格的索引
 
@@ -78,7 +103,7 @@ for file in tqdm(excel_files):
     grid_within_chicago['poi_count'] = grid_within_chicago.index.map(poi_counts).fillna(0)
 
     # 定义输出文件名
-    output_filename = f"poi_counts_{os.path.splitext(os.path.basename(file))[0]}.csv"
+    output_filename = f"output/poi_counts_{os.path.splitext(os.path.basename(file))[0]}.csv"
 
     # 输出每个文件的 POI 统计结果
     grid_within_chicago[['geometry', 'poi_count']].to_csv(output_filename, index=False)
