@@ -4,8 +4,8 @@ import pandas as pd
 import os
 from tqdm import tqdm
 
-# 设定你的 Excel 文件夹路径
-folder_path = 'data/grid_test'
+# 设定你的行程记录文件 csv 文件夹路径
+folder_path = 'data/grid'
 
 # 1. 划分网格
 # 读取芝加哥边界的 Shapefile
@@ -51,7 +51,7 @@ grid = gpd.GeoDataFrame({'geometry': polygons}, crs="EPSG:3857")
 print("generate grid finished")
 
 # 将生成的网格导出为 Shapefile 以便在 QGIS 中检查
-grid.to_file("output/python_output_grid.shp", driver="ESRI Shapefile")
+# grid.to_file("output/python_output_grid.shp", driver="ESRI Shapefile")
 
 
 # 剔除不在芝加哥边界内的网格
@@ -61,7 +61,7 @@ grid_within_chicago = gpd.overlay(grid, chicago_boundary_utm, how='intersection'
 print("intersection finished")
 
 # 导出裁剪后的网格为 Shapefile
-grid_within_chicago.to_file("output/python_output_grid_within_chicago.shp", driver="ESRI Shapefile")
+# grid_within_chicago.to_file("output/python_output_grid_within_chicago.shp", driver="ESRI Shapefile")
 
 # 2. 读取 Excel 数据
 # 收集所有 Excel 文件的路径
@@ -75,13 +75,21 @@ for file in tqdm(excel_files):
     # 处理文件检查点
     print(f"processing file: {file}")
 
-    # 将 POI 数据中的经纬度转换为地理坐标点，并检查每个 POI 属于哪个网格小方块
-    poi_gdf = gpd.GeoDataFrame(poi_data,
-                               geometry=gpd.points_from_xy(poi_data.longitude, poi_data.latitude),
-                               crs="EPSG:4326")
+    if 'latitude' in poi_data.columns and 'longitude' in poi_data.columns:
+        # 将 POI 数据中的经纬度转换为地理坐标点，并检查每个 POI 属于哪个网格小方块
+        poi_gdf = gpd.GeoDataFrame(poi_data,
+                                   geometry=gpd.points_from_xy(poi_data.longitude, poi_data.latitude),
+                                   crs="EPSG:4326")
+    elif 'start_lat' in poi_data.columns and 'start_lng' in poi_data.columns:
+        poi_gdf = gpd.GeoDataFrame(poi_data,
+                                   geometry=gpd.points_from_xy(poi_data.start_lng, poi_data.start_lat),
+                                   crs="EPSG:4326")
+    else:
+        print(f"{file} 中没有找到经纬度列. 跳过.")
+        continue
 
     # 将 POI 数据导出为 GeoJSON 以便在 QGIS 中加载
-    poi_gdf.to_file("output/python_output_poi_data.shp", driver="ESRI Shapefile")
+    # poi_gdf.to_file("output/python_output_poi_data.shp", driver="ESRI Shapefile")
 
     # 将 POI 数据转换为 UTM 坐标系
     poi_gdf_utm = poi_gdf.to_crs(epsg=3857)
@@ -94,7 +102,7 @@ for file in tqdm(excel_files):
     print(f"Spatial join completed. Number of POIs joined: {len(joined)}")
 
     # 导出空间连接后的结果为 Shapefile
-    joined.to_file(f"output/{os.path.splitext(os.path.basename(file))[0]}_python_output_joined_poi_grid.shp", driver="ESRI Shapefile")
+    # joined.to_file(f"output/{os.path.splitext(os.path.basename(file))[0]}_python_output_joined_poi_grid.shp", driver="ESRI Shapefile")
 
     # 统计每个网格中的 POI 数量
     poi_counts = joined['index_right'].value_counts()  # 统计网格的索引
