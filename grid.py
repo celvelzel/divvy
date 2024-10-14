@@ -22,7 +22,6 @@ chicago_boundary_utm = chicago_boundary.to_crs(epsg=3857)
 # 这将创建一个包含外部边界的单一多边形
 chicago_boundary_tum = chicago_boundary_utm.union_all()
 
-
 # 获取芝加哥的边界范围
 # 返回 GeoDataFrame 中几何对象的总边界，格式为 (min_x, min_y, max_x, max_y)，分别表示几何对象的最小和最大坐标值
 # 获取芝加哥边界的最小和最大 x、y 坐标，用于生成网格
@@ -110,10 +109,14 @@ for file in tqdm(excel_files):
     # 将 POI 计数填充到网格中
     grid_within_chicago['poi_count'] = grid_within_chicago.index.map(poi_counts).fillna(0)
 
+    # 为每个网格添加目录索引
+    grid_index = grid_within_chicago.index + 1
+    grid_within_chicago['grid_index'] = 'grid' + grid_index.astype(str)
+
     # 定义输出文件名
     output_filename = f"output/poi_counts_{os.path.splitext(os.path.basename(file))[0]}.csv"
 
     # 输出每个文件的 POI 统计结果
-    grid_within_chicago[['geometry', 'poi_count']].to_csv(output_filename, index=False)
+    grid_within_chicago[['grid_index', 'geometry', 'poi_count']].to_csv(output_filename, index=False)
 
     print(f"Processed and saved: {output_filename}")
