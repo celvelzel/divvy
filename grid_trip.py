@@ -69,20 +69,20 @@ excel_files = [os.path.join(folder_path, file) for file in os.listdir(folder_pat
 # 逐个处理 Excel 文件
 for file in tqdm(excel_files):
     # 读取 Excel 文件
-    poi_data = pd.read_csv(file)
+    trip_data = pd.read_csv(file)
 
     # 处理文件检查点
     print(f"processing file: {file}")
 
-    if 'latitude' in poi_data.columns and 'longitude' in poi_data.columns:
+    if 'latitude' in trip_data.columns and 'longitude' in trip_data.columns:
         # 将 POI 数据中的经纬度转换为地理坐标点，并检查每个 POI 属于哪个网格小方块
-        poi_gdf = gpd.GeoDataFrame(poi_data,
-                                   geometry=gpd.points_from_xy(poi_data.longitude, poi_data.latitude),
-                                   crs="EPSG:4326")
-    elif 'start_lat' in poi_data.columns and 'start_lng' in poi_data.columns:
-        poi_gdf = gpd.GeoDataFrame(poi_data,
-                                   geometry=gpd.points_from_xy(poi_data.start_lng, poi_data.start_lat),
-                                   crs="EPSG:4326")
+        trip_gdf = gpd.GeoDataFrame(trip_data,
+                                    geometry=gpd.points_from_xy(trip_data.longitude, trip_data.latitude),
+                                    crs="EPSG:4326")
+    elif 'start_lat' in trip_data.columns and 'start_lng' in trip_data.columns:
+        trip_gdf = gpd.GeoDataFrame(trip_data,
+                                    geometry=gpd.points_from_xy(trip_data.start_lng, trip_data.start_lat),
+                                    crs="EPSG:4326")
     else:
         print(f"{file} 中没有找到经纬度列. 跳过.")
         continue
@@ -91,12 +91,12 @@ for file in tqdm(excel_files):
     # poi_gdf.to_file("output/python_output_poi_data.shp", driver="ESRI Shapefile")
 
     # 将 POI 数据转换为 UTM 坐标系
-    poi_gdf_utm = poi_gdf.to_crs(epsg=3857)
+    trip_gdf_utm = trip_gdf.to_crs(epsg=3857)
 
     # 在空间连接前
     print("Starting spatial join...")
     # 使用 spatial join 将 POI 数据与网格匹配，找到每个 POI 属于哪个方块
-    joined = gpd.sjoin(poi_gdf_utm, grid_within_chicago, how="left", predicate="within")
+    joined = gpd.sjoin(trip_gdf_utm, grid_within_chicago, how="left", predicate="within")
     # 在空间连接后
     print(f"Spatial join completed. Number of POIs joined: {len(joined)}")
 
@@ -104,10 +104,10 @@ for file in tqdm(excel_files):
     # joined.to_file(f"output/{os.path.splitext(os.path.basename(file))[0]}_python_output_joined_poi_grid.shp", driver="ESRI Shapefile")
 
     # 统计每个网格中的 POI 数量
-    poi_counts = joined['index_right'].value_counts()  # 统计网格的索引
+    trip_counts = joined['index_right'].value_counts()  # 统计网格的索引
 
-    # 将 POI 计数填充到网格中
-    grid_within_chicago['poi_count'] = grid_within_chicago.index.map(poi_counts).fillna(0)
+    # 将 行程 计数填充到网格中
+    grid_within_chicago['trip_count'] = grid_within_chicago.index.map(trip_counts).fillna(0)
 
     # 为每个网格添加目录索引
     grid_index = grid_within_chicago.index + 1
@@ -116,7 +116,7 @@ for file in tqdm(excel_files):
     # 定义输出文件名
     output_filename = f"output/trip_counts_{os.path.splitext(os.path.basename(file))[0]}.csv"
 
-    # 输出每个文件的 POI 统计结果
-    grid_within_chicago[['grid_index', 'geometry', 'poi_count']].to_csv(output_filename, index=False)
+    # 输出每个文件的 行程 统计结果
+    grid_within_chicago[['grid_index', 'geometry', 'trip_count']].to_csv(output_filename, index=False)
 
     print(f"Processed and saved: {output_filename}")
