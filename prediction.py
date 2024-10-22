@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
+import logging
 import os
 from statsmodels.tsa.arima.model import ARIMA
 import matplotlib.pyplot as plt
@@ -9,13 +11,13 @@ from statsmodels.stats.diagnostic import acorr_ljungbox
 
 # 设置行程数据的起始日期
 start_date = '2013-01-01'
-
-
-# 忽略警告
-warnings.filterwarnings('ignore')
+# 设置行程数据的结束时间
+end_date = '2013-12-31'
+# 闭区间
+dates = pd.date_range(start=start_date, end_dates=end_date, freq='7D')
 
 # 设置数据文件夹路径
-data_folder = 'path/to/your/data'  # 请修改为你的数据文件夹路径
+data_folder = 'data/dateset'  # 请修改为你的数据文件夹路径
 
 # 获取所有CSV文件
 csv_files = [f for f in os.listdir(data_folder) if f.endswith('.csv')]
@@ -28,7 +30,7 @@ if not csv_files:
 total_trips_list = []
 
 # 遍历所有文件，读取数据并合并
-for csv_file in csv_files:
+for csv_file in tqdm(csv_files):
     file_path = os.path.join(data_folder, csv_file)
 
     try:
@@ -42,8 +44,23 @@ for csv_file in csv_files:
         # 假设第一列为索引，第二列为行程数
         trips = df.iloc[:, 1]
 
-        # 累加所有区块的行程数
-        total_trips_list.append(trips.sum())
+        # 2. 数据预处理
+        try:
+            # 检查是否有缺失值
+            if data.isnull().sum().sum() > 0:
+                logging.warning("Interpolating missing values.")
+                data = data.interpolate()
+
+            # 可视化数据
+            # plt.figure(figsize=(12, 6))
+            # plt.plot(data.index, data['TotalTrips'])
+            # plt.xlabel('Date')
+            # plt.ylabel('Total Trips')
+            # plt.title('Weekly Total Trips Over 9 Years')
+            # plt.show()
+        except Exception as e:
+            logging.error(f"Error in data preprocessing or visualization: {e}")
+            raise
 
     except Exception as e:
         print(f"处理文件 {csv_file} 时发生错误: {e}")

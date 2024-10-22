@@ -3,11 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.tsa.arima.model import ARIMA
 
-# 设置 Matplotlib 默认字体为 SimHei
-plt.rcParams['font.sans-serif'] = ['SimHei']  # 用于正常显示中文标签
-plt.rcParams['axes.unicode_minus'] = False  # 用于正常显示负号
-
-
 # 1. 随机生成572个有趋势的数据
 np.random.seed(42)  # 设置随机种子以确保结果可重现
 n_weeks = 572  # 9年每周的总数
@@ -19,7 +14,7 @@ noise = np.random.normal(0, 5, n_weeks)  # 添加一些噪声
 data = trend + seasonality + noise
 
 # 将数据转换为 DataFrame
-dates = pd.date_range(start='2013-01-01', periods=n_weeks, freq='W')
+dates = pd.date_range(start='2015-01-01', periods=n_weeks, freq='W')
 df = pd.DataFrame(data, index=dates, columns=['Trips'])
 
 # 2. 数据可视化
@@ -33,19 +28,19 @@ plt.grid()
 plt.show()
 
 # 3. 构建并训练 ARIMA 模型
-# 尝试不同的 p, d, q 参数组合
-model = ARIMA(df['Trips'], order=(3, 1, 4))  # 选择合适的 p, d, q
-
-# 拟合模型并捕获异常
+model = ARIMA(df['Trips'], order=(1, 1, 1))  # 选择合适的 p, d, q
 model_fit = model.fit()
 
 # 4. 进行预测未来52周
 forecast_steps = 52
-forecast = model_fit.get_forecast(steps=forecast_steps)
-forecast_index = pd.date_range(start=df.index[-1] + pd.DateOffset(weeks=1), periods=forecast_steps, freq='W')
+forecast = model_fit.forecast(steps=forecast_steps)
+
+# 生成未来日期
+last_date = df.index[-1]  # 获取最后一个日期
+future_dates = pd.date_range(start=last_date + pd.DateOffset(weeks=1), periods=forecast_steps, freq='W')
 
 # 创建预测结果的 DataFrame
-forecast_df = pd.DataFrame(forecast.predicted_mean, index=forecast_index, columns=['Predicted_Trips'])
+forecast_df = pd.DataFrame(forecast, index=future_dates, columns=['Predicted_Trips'])
 
 # 5. 可视化结果
 plt.figure(figsize=(12, 6))
