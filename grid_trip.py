@@ -110,13 +110,13 @@ for file in tqdm(excel_files):
     grid_within_chicago['trip_count'] = grid_within_chicago.index.map(trip_counts).fillna(0)
 
     # 为每个网格添加目录索引
-    grid_index = grid_within_chicago.index + 1
-    grid_within_chicago['grid_index'] = 'grid' + grid_index.astype(str)
+    # grid_index = grid_within_chicago.index + 1
+    grid_within_chicago['grid_id'] = grid_within_chicago.index.astype(str)
 
     # 定义输出文件名
-    output_filename = f"output/trip_counts_{os.path.splitext(os.path.basename(file))[0]}.csv"
+    output_filename = f"output/trip_count_week/trip_counts_{os.path.splitext(os.path.basename(file))[0]}.csv"
 
     # 输出每个文件的 行程 统计结果
-    grid_within_chicago[['grid_index', 'geometry', 'trip_count']].to_csv(output_filename, index=False)
+    grid_within_chicago[['grid_id', 'geometry', 'trip_count']].to_csv(output_filename, index=False)
 
     print(f"Processed and saved: {output_filename}")

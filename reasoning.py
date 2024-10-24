@@ -2,7 +2,7 @@ import joblib
 import pandas as pd
 
 # 模型保存的路径
-model_path = 'data/model/rfc_model.pkl'
+model_path = 'model/rfc_model.pkl'
 # 预测结果保存路径
 output_path = 'output/reasoning_result.csv'
 
