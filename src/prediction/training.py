@@ -1,4 +1,3 @@
-# Python随机森林分类
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -9,19 +8,19 @@ import joblib
 import os
 
 # 数据路径
-path = 'data/dataset/grid_poi_counts.csv'
+# data_path = 'data/dataset/grid_poi_counts.csv'
 # 模型保存路径
-model_path = 'model/rfc_model.pkl'
+model_path = '../../model/rfc_model.pkl'
 # 测试集比例
 text_size_ratio = 0.1
 # 额外的0行程网格比例
-zero_trip_ratio = 0.01
+zero_trip_ratio = 0.1
 
 # 多周行程与poi根据区块索引进行拼接
 # 行程数据的目录
-trip_file_path = 'data/trips'
+trip_file_path = '../../data/trips'
 # POI数据的路径
-poi_file_path = 'output/grid_poi_counts.csv'
+poi_file_path = '../../output/grid_poi_counts.csv'
 
 # 读取poi数据
 poi_data = pd.read_csv(poi_file_path)
@@ -31,8 +30,8 @@ all_trips = []
 # 遍历文件夹中所有文件
 for trip_file in os.listdir(trip_file_path):
     if trip_file.endswith('.csv'):
-        path = os.path.join(trip_file_path, trip_file)
-        trips = pd.read_csv(path)
+        csv_path = os.path.join(trip_file_path, trip_file)
+        trips = pd.read_csv(csv_path)
         trips.drop(columns=['geometry'], inplace=True)
         all_trips.append(trips)
 all_trips = pd.concat(all_trips, ignore_index=True)

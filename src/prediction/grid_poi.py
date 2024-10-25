@@ -5,10 +5,10 @@ import pandas as pd
 
 # settings
 # 读取芝加哥边界的 Shapefile
-chicago_boundary = gpd.read_file('data/chicago/simple_chicago.shp')
+chicago_boundary = gpd.read_file('../../data/chicago/simple_chicago.shp')
 
 # 定义 POI 文件夹路径
-folder_path = 'data/poi'  # POI Shapefile 文件夹路径
+folder_path = '../../data/poi'  # POI Shapefile 文件夹路径
 
 
 # 2. 确保所有数据使用相同的坐标系 (EPSG:4326)，再转换为 UTM 投影 (EPSG:32616)
@@ -71,13 +71,13 @@ for file in os.listdir(folder_path):
         output_data[file.split('.')[0]] = grid_within_chicago[file.split('.')[0]]
 
 # 检查输出文件夹是否存在，若不存在则创建
-output_dir = "output"
+output_dir = "../../output"
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
 # 9. 导出到csv文件
 output_path = os.path.join(output_dir, "grid_poi_counts.csv")
-output_data.to_csv(output_path, index=False)
+output_data.to_csv(output_path, index=False, encoding='utf-8')
 
 print(f"已成功导出到: {output_path}")
 

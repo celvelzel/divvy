@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 
 # 指定文件夹路径
-trips_folder_path = 'data\\trips'
+trips_folder_path = '../../data/trips'
 # 站点信息文件夹名称
 stations_folder_path = 'data\\stations'
 # 站点信息文件各字段名称

@@ -5,11 +5,11 @@ import os
 from tqdm import tqdm
 
 # 设定你的行程记录文件 csv 文件夹路径
-folder_path = 'data/grid'
+folder_path = '../../data/grid'
 
 # 1. 划分网格
 # 读取芝加哥边界的 Shapefile
-chicago_boundary = gpd.read_file('data/chicago/simple_chicago.shp')
+chicago_boundary = gpd.read_file('../../data/chicago/simple_chicago.shp')
 
 # 确保边界文件是 WGS84 坐标系 (EPSG:4326)
 if chicago_boundary.crs != "EPSG:4326":
@@ -60,5 +60,5 @@ grid_within_chicago = gpd.overlay(grid, chicago_boundary_utm, how='intersection'
 print("intersection finished")
 
 # 导出裁剪后的网格为 Shapefile
-os.mkdir('output/grid')
+os.mkdir('../../output/grid')
 grid_within_chicago.to_file("output/grid/python_output_grid_within_chicago.shp", driver="ESRI Shapefile")
