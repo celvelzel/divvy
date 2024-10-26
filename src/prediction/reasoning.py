@@ -22,6 +22,13 @@ if 'geometry' in poi_data.columns:
 rfc = joblib.load(model_path)
 print("模型已加载")
 
+# 创建输出目录
+try:
+    os.makedirs(output_path)
+    print('目录创建成功')
+except FileExistsError:
+    print(f'目录{output_path}已经存在')
+
 for trip_file_path in tqdm(trip_data_path):
     if trip_data_path.endswith('.csv'):
         data_path = os.path.join(trip_data_path, trip_file_path)
