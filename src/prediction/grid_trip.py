@@ -6,6 +6,8 @@ from tqdm import tqdm
 
 # 设定你的行程记录文件 csv 文件夹路径
 folder_path = '../../data/grid'
+# 结果输出目录
+output_folder = '../../output/trip_count_week'
 
 # 1. 划分网格
 # 读取芝加哥边界的 Shapefile
@@ -113,6 +115,11 @@ for file in tqdm(excel_files):
     # grid_index = grid_within_chicago.index + 1
     grid_within_chicago['grid_id'] = grid_within_chicago.index.astype(str)
 
+    try:
+        os.makedirs(output_folder)
+        print('目录创建成功')
+    except FileExistsError:
+        print(f'目录{output_folder}已经存在')
     # 定义输出文件名
     output_filename = f"output/trip_count_week/trip_counts_{os.path.splitext(os.path.basename(file))[0]}.csv"
 
