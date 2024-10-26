@@ -10,7 +10,9 @@ import os
 # 数据路径
 # data_path = 'data/dataset/grid_poi_counts.csv'
 # 模型保存路径
-model_path = '../../model/rfc_model.pkl'
+model_path = '../../model'
+# 模型文件名
+model_file_name = 'rfc_model.pkl'
 # 测试集比例
 text_size_ratio = 0.1
 # 额外的0行程网格比例
@@ -21,6 +23,13 @@ zero_trip_ratio = 0.1
 trip_file_path = '../../data/trips'
 # POI数据的路径
 poi_file_path = '../../output/grid_poi_counts.csv'
+
+# 创建输出目录
+try:
+    os.makedirs(model_path)
+    print('目录创建成功')
+except FileExistsError:
+    print(f'目录{model_path}已经存在')
 
 # 读取poi数据
 poi_data = pd.read_csv(poi_file_path)
@@ -93,5 +102,6 @@ print("Accuracy:")  # 输出精度
 print(accuracy_score(y_test, y_pred))
 
 # 保存训练好的模型
-joblib.dump(rfc, model_path)
+final_path = os.path.join(model_path, model_file_name)
+joblib.dump(rfc, final_path)
 print("模型已保存")
