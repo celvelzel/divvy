@@ -17,7 +17,7 @@ for file_name in tqdm(sorted(os.listdir(input_folder))):
     if file_name.endswith('.csv'):
         # 提取周标识，例如 'week1' 等，作为行索引
         date = re.search(date_pattern, file_name)
-        week_name = date
+        week = date
 
         # 读取 CSV 文件
         file_path = os.path.join(input_folder, file_name)
@@ -25,7 +25,7 @@ for file_name in tqdm(sorted(os.listdir(input_folder))):
 
         # 将区块数据转换为一行，以 `grid_id` 作为列名，`trip_counts` 作为值
         week_series = df.set_index('grid_id')['trip_counts']
-        week_series.name = week_name  # 行名设置为周标识
+        week_series.name = week  # 行名设置为周标识
 
         # 将周数据追加到列表中
         weekly_data.append(week_series)

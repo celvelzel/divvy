@@ -62,9 +62,8 @@ for trip_file_path in tqdm(trip_data_path):
         filename = os.path.splitext(os.path.basename(data_path))[0]
         date_pattern = r'\d{4}-\d{2}-\d{2}'
         date = re.search(date_pattern, filename)
-        output_path= f"../../output/reasoning_result/reasoning_result_{date}.csv"
+        output_path = f"../../output/reasoning_result/reasoning_result_{date}.csv"
 
         # 保存更新后的原始数据
         raw_data.to_csv(output_path, index=False)
         print(f"预测结果已保存至文件 {output_path}")
-
