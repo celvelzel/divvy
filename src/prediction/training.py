@@ -92,14 +92,25 @@ scaler = MinMaxScaler()
 x_train_scaled = scaler.fit_transform(x_train)
 x_test_scaled = scaler.transform(x_test)
 
+# try:
+#     # 网格参数
+#     param_grid = {
+#         'n_estimators': [100, 200, 300, 400, 500],
+#         'max_depth': [None, 10, 20, 30, 40],
+#         'min_samples_split': [2, 5, 10],
+#         'min_samples_leaf': [1, 2, 4, 6]
+#     }
+#     grid_search = GridSearchCV(estimator=RandomForestRegressor(), param_grid=param_grid, cv=3)
+#     grid_search.fit(x_train_scaled, y_train)
+#     print("最佳参数：", grid_search.best_params_)
+# except Exception as e:
+#     print(e)
+
 # 训练模型
-params = {
-    'max_depth': None,
-    'min_samples_leaf': 1,
-    'min_samples_split': 2,
-    'n_estimators': 300
-}
-model = RandomForestRegressor(**params)  # 使用默认随机森林分类器
+# 最佳参数： {'max_depth': 20, 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 100}
+# params = grid_search.best_params_
+# model = RandomForestRegressor(**params)  # 使用默认随机森林回归器
+model = RandomForestRegressor()  # 使用默认随机森林回归器
 model.fit(x_train_scaled, y_train)  # 使用训练数据集训练随机森林模型
 
 # 评估模型
@@ -107,10 +118,6 @@ y_pred = model.predict(x_test_scaled)  # 使用分类器预测测试集的类别
 importances = model.feature_importances_  # 计算特征重要性
 print("Importances")
 print(importances)
-# print("Confusion Matrix:")
-# print(confusion_matrix(y_test, y_pred))  # 输出混淆矩阵
-print("Classification Report:")
-# print(classification_report(y_test, y_pred))  # 输出分类报告
 mse = mean_squared_error(y_test, y_pred)
 print(f"均方误差 (MSE): {mse:.4f}")
 print(f"均方根误差 (RMSE): {np.sqrt(mse):.4f}")
@@ -123,16 +130,3 @@ print(f"决定系数 (R²): {r2_score(y_test, y_pred):.4f}")
 final_path = os.path.join(model_path, model_file_name)
 joblib.dump(model, final_path)
 print("模型已保存")
-
-# try:
-#     param_grid = {
-#         'n_estimators': [100, 200, 300],
-#         'max_depth': [None, 10, 20, 30],
-#         'min_samples_split': [2, 5, 10],
-#         'min_samples_leaf': [1, 2, 4]
-#     }
-#     grid_search = GridSearchCV(estimator=RandomForestRegressor(), param_grid=param_grid, cv=3)
-#     grid_search.fit(x_train_scaled, y_train)
-#     print("最佳参数：", grid_search.best_params_)
-# except Exception as e:
-#     print(e)
