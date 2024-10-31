@@ -121,7 +121,7 @@ for file in tqdm(excel_files):
     except FileExistsError:
         print(f'目录{output_folder}已经存在')
     # 定义输出文件名
-    output_filename = f"output/trip_count_week/trip_counts_{os.path.splitext(os.path.basename(file))[0]}.csv"
+    output_filename = f"../../output/trip_count_week/trip_counts_{os.path.splitext(os.path.basename(file))[0]}.csv"
 
     # 输出每个文件的 行程 统计结果
     grid_within_chicago[['grid_id', 'geometry', 'trip_count']].to_csv(output_filename, index=False)
