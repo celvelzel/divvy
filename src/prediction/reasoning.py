@@ -47,8 +47,12 @@ for trip_file_path in tqdm(trip_data_path):
         x_new = zero_trip_data  # 仅使用行程数为0的区块数据作为输入特征
         x_new.drop(columns=['grid_id', 'trip_count'], inplace=True)
 
+        # 归一化
+        scaler = MinMaxScaler()
+        x_new_scaled = scaler.fit_transform(x_new)
+        
         # 进行预测
-        predictions = rfc.predict(x_new)
+        predictions = rfc.predict(x_new_scaled)
 
         # 输出预测结果
         # zero_trip_data['predicted_trip_count'] = predictions  # 将预测结果添加到新数据中
