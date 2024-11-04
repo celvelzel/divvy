@@ -21,7 +21,9 @@ model_file_name = 'rfc_model.pkl'
 # 测试集比例
 test_size_ratio = 0.3
 # 额外的0行程网格比例
-zero_trip_ratio = 0.01
+zero_trip_ratio = 0
+# 是否添加时间作为特征变量
+add_time_feature = True
 
 # 行程数据的目录
 trip_file_path = '../../data/trips'
@@ -83,7 +85,9 @@ def load_and_process_data():
             csv_path = os.path.join(trip_file_path, trip_file)
             try:
                 trips = pd.read_csv(csv_path)
-                trips = add_time_features(trip_file, trips)
+                # 添加时间特征
+                if add_time_feature:
+                    trips = add_time_features(trip_file, trips)
                 trips.drop(columns=['geometry'], inplace=True, errors='ignore')
                 all_trips.append(trips)
             except Exception as e:
