@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import joblib
@@ -30,12 +30,28 @@ trip_file_path = '../../data/trips'
 # POI数据的路径
 poi_file_path = '../../data/dataset/grid_poi_counts.csv'
 
+# 配置滑动窗口参数
+window_size = 48  # 窗口大小（周）
+step_size = 1  # 步长（周）
+
 # 创建输出目录
 try:
     os.makedirs(model_path)
     logging.info('目录创建成功')
 except FileExistsError:
     logging.info(f'目录{model_path}已经存在')
+
+
+def extract_date_from_filename(filename):
+    """
+    从文件名中提取日期。
+    假设文件名格式为 'trips_YYYY-MM-DD.csv'
+    """
+    date_str = filename.split('_')[-1].replace('.csv', '')
+    matcher = re.compile(r'\d{4}-\d{2}-\d{2}')
+    if matcher.fullmatch(date_str):
+        return pd.to_datetime(date_str)
+    return None
 
 
 def add_time_features(trip_file, trips):
@@ -50,11 +66,7 @@ def add_time_features(trip_file, trips):
     DataFrame: 添加了时间特征的行程数据
     """
     try:
-        date_str = trip_file.split('_')[-1].replace('.csv', '')
-        matcher = re.compile(r'\d{4}-\d{2}-\d{2}')
-        date_str = matcher.search(date_str).group()
-        date = pd.to_datetime(date_str)
-
+        date = extract_date_from_filename(trip_file)
         trips['month'] = date.month  # 月份
         trips['day_of_year'] = date.dayofyear  # 一年中的第几天
         return trips
@@ -63,7 +75,7 @@ def add_time_features(trip_file, trips):
         return trips
 
 
-def load_and_process_data():
+def load_and_merge_data(trip_data):
     """
     加载和处理数据。
 
@@ -78,9 +90,10 @@ def load_and_process_data():
         logging.error(f"读取POI数据时发生错误: {e}")
         return None
 
-    # 将每周行程文件拼接
     all_trips = []
-    for trip_file in os.listdir(trip_file_path):
+
+    # 读取所有行程文件
+    for trip_file in trip_data:
         if trip_file.endswith('.csv'):
             csv_path = os.path.join(trip_file_path, trip_file)
             try:
@@ -103,12 +116,6 @@ def load_and_process_data():
     # 合并行程数据和POI数据
     merged_data = pd.merge(all_trips, poi_data, on='grid_id', how='left')
     logging.info('行程数据和POI数据合并完成')
-
-    # 计算每个区块的平均行程数
-    # avg_trip_count = merged_data.groupby('grid_id')['trip_count'].mean().reset_index()
-    # avg_trip_count.columns = ['grid_id', 'avg_trip_count']
-    # merged_data = pd.merge(merged_data, avg_trip_count, on='grid_id', how='left')
-    # logging.info('平均行程数据拼接完成')
 
     return merged_data
 
@@ -145,23 +152,37 @@ def preprocess_data(data):
     y = combined_data['trip_count']  # 目标变量
 
     # 输出数据平均值
-    logging.info('数据集trip_count平均值:')
-    logging.info(y.mean())
+    logging.info('数据均值: %f', y.mean())
 
     return x, y
 
 
-def train_and_evaluate_model(x, y):
+def sliding_window_split(files, window_size, step_size):
+    """
+    使用滑动窗口按文件顺序选择训练集和测试集。
+
+    参数：
+    files (list): 按日期排序的文件路径列表
+    window_size (int): 滑动窗口大小
+    step_size (int): 步长
+
+    返回：
+    list: 每个窗口的训练集和测试集文件索引
+    """
+    file_windows = []
+
+    for start in range(0, len(files) - window_size, step_size):
+        end = start + window_size
+        train_files = files[start:end]
+        file_windows.append(train_files)
+
+    return file_windows
+
+
+def train_and_evaluate_model(x_train, y_train, x_test, y_test):
     """
     训练和评估模型。
-
-    参数:
-    x (DataFrame): 输入特征
-    y (Series): 目标变量
     """
-    # 划分训练集和测试集
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size_ratio, random_state=0)
-
     # 归一化
     scaler = MinMaxScaler()
     x_train_scaled = scaler.fit_transform(x_train)
@@ -177,44 +198,75 @@ def train_and_evaluate_model(x, y):
     importances_percent = importances * 100
 
     # 打印特征重要性
-    feature_names = x.columns.tolist()
+    feature_names = x_train.columns.tolist()
     logging.info("特征重要性 (%):")
     for feature, importance in zip(feature_names, importances_percent):
         logging.info(f"{feature}: {importance:.2f}%")
 
-    mse = mean_squared_error(y_test, y_pred)
-    rmse = np.sqrt(mse)
     mae = mean_absolute_error(y_test, y_pred)
     r2 = r2_score(y_test, y_pred)
+    # 计算数据均值
+    data_mean = y_test.mean()
+    # 计算NMAE
+    nmae = mae / data_mean
 
-    logging.info(f"均方误差 (MSE): {mse:.4f}")
-    logging.info(f"均方根误差 (RMSE): {rmse:.4f}")
     logging.info(f"平均绝对误差 (MAE): {mae:.4f}")
     logging.info(f"决定系数 (R²): {r2:.4f}")
+    logging.info(f"归一化平均绝对误差 (NMAE): {nmae:.4f}")
 
     # 保存训练好的模型
     final_path = os.path.join(model_path, model_file_name)
     joblib.dump(model, final_path)
     logging.info("模型已保存")
 
+    model_dict = {'model': model, 'r2': r2, 'nmae': nmae}
+    return model_dict
+
 
 def main():
     """
     主函数，执行整个流程。
     """
-    # 加载和处理数据
-    raw_data = load_and_process_data()
-    if raw_data is None:
-        logging.error("数据加载失败")
-        return
+    # 获取按日期排序的行程文件列表
+    trip_files = [f for f in os.listdir(trip_file_path) if f.endswith('.csv')]
+    trip_files.sort(key=lambda f: extract_date_from_filename(f))  # 根据文件名中的日期排序
 
-    # 预处理数据
-    x, y = preprocess_data(raw_data)
+    # 使用滑动窗口划分训练集和测试集
+    file_windows = sliding_window_split(trip_files, window_size, step_size)
 
-    # 训练和评估模型
-    train_and_evaluate_model(x, y)
+    best_model = None
+    best_r2 = -np.inf
+    best_nmae = -np.inf
 
-    print("训练结束")
+    for files_in_a_window in file_windows:
+        # 根据训练集文件加载数据
+        raw_data = load_and_merge_data(files_in_a_window)
+
+        x, y = preprocess_data(raw_data)
+
+        start_date = extract_date_from_filename(files_in_a_window[0])
+        end_date = extract_date_from_filename(files_in_a_window[-1])
+        logging.info(f"正在训练模型：窗口为{start_date}到{end_date}")
+        # 训练和评估模型
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size_ratio, random_state=0)
+        model_dict = train_and_evaluate_model(x_train, y_train, x_test, y_test)
+        model = model_dict.get('model')
+        r2 = model_dict.get('r2')
+        nmae = model_dict.get('nmae')
+
+        # 保存最优模型
+        if model is not None:
+            # if r2 > best_r2:
+            #     best_r2 = r2
+            #     best_model = model
+            if nmae < best_nmae:
+                best_nmae = nmae
+                best_model = model
+
+    # 保存最优模型
+    final_path = os.path.join(model_path, model_file_name)
+    joblib.dump(best_model, final_path)
+    logging.info("最优模型已保存")
 
 
 if __name__ == "__main__":
