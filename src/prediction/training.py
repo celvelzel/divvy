@@ -31,7 +31,7 @@ trip_file_path = '../../data/trips'
 poi_file_path = '../../data/dataset/grid_poi_counts.csv'
 
 # 配置滑动窗口参数
-window_size = 48  # 窗口大小（周）
+window_size = 4  # 窗口大小（周）
 step_size = 1  # 步长（周）
 
 # 创建输出目录
@@ -50,7 +50,7 @@ def extract_date_from_filename(filename):
     date_str = filename.split('_')[-1].replace('.csv', '')
     matcher = re.compile(r'\d{4}-\d{2}-\d{2}')
     if matcher.fullmatch(date_str):
-        return pd.to_datetime(date_str)
+        return pd.to_datetime(date_str).date()
     return None
 
 
@@ -194,14 +194,14 @@ def train_and_evaluate_model(x_train, y_train, x_test, y_test):
 
     # 评估模型
     y_pred = model.predict(x_test_scaled)
-    importances = model.feature_importances_  # 计算特征重要性
-    importances_percent = importances * 100
+    # importances = model.feature_importances_  # 计算特征重要性
+    # importances_percent = importances * 100
 
-    # 打印特征重要性
-    feature_names = x_train.columns.tolist()
-    logging.info("特征重要性 (%):")
-    for feature, importance in zip(feature_names, importances_percent):
-        logging.info(f"{feature}: {importance:.2f}%")
+    # # 打印特征重要性
+    # feature_names = x_train.columns.tolist()
+    # logging.info("特征重要性 (%):")
+    # for feature, importance in zip(feature_names, importances_percent):
+    #     logging.info(f"{feature}: {importance:.2f}%")
 
     mae = mean_absolute_error(y_test, y_pred)
     r2 = r2_score(y_test, y_pred)
@@ -235,8 +235,8 @@ def main():
     file_windows = sliding_window_split(trip_files, window_size, step_size)
 
     best_model = None
-    best_r2 = -np.inf
-    best_nmae = -np.inf
+    best_r2 = 0
+    best_nmae = 1
 
     for files_in_a_window in file_windows:
         # 根据训练集文件加载数据
@@ -261,12 +261,28 @@ def main():
             #     best_model = model
             if nmae < best_nmae:
                 best_nmae = nmae
+                best_r2 = r2
                 best_model = model
+                best_model_start_date = start_date
+                best_model_end_date =  end_date
+                logging.info("最优模型已更新")
 
-    # 保存最优模型
+    # 保存最佳模型
     final_path = os.path.join(model_path, model_file_name)
     joblib.dump(best_model, final_path)
-    logging.info("最优模型已保存")
+    # 打印最佳模型评估结果
+    logging.info("最佳模型评估结果:")
+    logging.info(f"最佳模型时间窗口为{best_model_start_date}到{best_model_end_date}")
+    importances = best_model.feature_importances_  # 计算特征重要性
+    importances_percent = importances * 100
+    # 打印特征重要性
+    feature_names = x_train.columns.tolist()
+    logging.info("特征重要性 (%):")
+    for feature, importance in zip(feature_names, importances_percent):
+        logging.info(f"{feature}: {importance:.2f}%")
+    logging.info(f"最佳模型决定系数 (R²): {best_r2:.4f}")
+    logging.info(f"最佳模型归一化平均绝对误差 (NMAE): {best_nmae:.4f}")
+    logging.info("最佳模型已保存")
 
 
 if __name__ == "__main__":
