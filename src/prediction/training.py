@@ -25,6 +25,7 @@ zero_trip_ratio = 0
 # 是否添加时间作为特征变量
 add_time_feature = True
 
+
 # 行程数据的目录
 trip_file_path = '../../data/trips'
 # POI数据的路径
@@ -50,7 +51,7 @@ def extract_date_from_filename(filename):
     date_str = filename.split('_')[-1].replace('.csv', '')
     matcher = re.compile(r'\d{4}-\d{2}-\d{2}')
     if matcher.fullmatch(date_str):
-        return pd.to_datetime(date_str).date()
+        return pd.to_datetime(date_str)
     return None
 
 
@@ -210,14 +211,14 @@ def train_and_evaluate_model(x_train, y_train, x_test, y_test):
     # 计算NMAE
     nmae = mae / data_mean
 
-    logging.info(f"平均绝对误差 (MAE): {mae:.4f}")
+    # logging.info(f"平均绝对误差 (MAE): {mae:.4f}")
     logging.info(f"决定系数 (R²): {r2:.4f}")
     logging.info(f"归一化平均绝对误差 (NMAE): {nmae:.4f}")
 
     # 保存训练好的模型
-    final_path = os.path.join(model_path, model_file_name)
-    joblib.dump(model, final_path)
-    logging.info("模型已保存")
+    # final_path = os.path.join(model_path, model_file_name)
+    # joblib.dump(model, final_path)
+    # logging.info("模型已保存")
 
     model_dict = {'model': model, 'r2': r2, 'nmae': nmae}
     return model_dict
@@ -244,8 +245,8 @@ def main():
 
         x, y = preprocess_data(raw_data)
 
-        start_date = extract_date_from_filename(files_in_a_window[0])
-        end_date = extract_date_from_filename(files_in_a_window[-1])
+        start_date = extract_date_from_filename(files_in_a_window[0]).date()
+        end_date = extract_date_from_filename(files_in_a_window[-1]).date()
         logging.info(f"正在训练模型：窗口为{start_date}到{end_date}")
         # 训练和评估模型
         x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size_ratio, random_state=0)
@@ -268,7 +269,7 @@ def main():
                 logging.info("最优模型已更新")
 
     # 保存最佳模型
-    final_path = os.path.join(model_path, model_file_name)
+        final_path = os.path.join(model_path, model_file_name)
     joblib.dump(best_model, final_path)
     # 打印最佳模型评估结果
     logging.info("最佳模型评估结果:")
