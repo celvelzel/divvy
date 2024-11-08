@@ -1,6 +1,4 @@
 from datetime import timedelta
-
-import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
@@ -28,12 +26,12 @@ zero_trip_ratio = 0
 add_time_feature = True
 
 # 行程数据的目录
-trip_file_path = '../../data/trips'
+trip_file_path = '../../data/finished_trips'
 # POI数据的路径
 poi_file_path = '../../data/dataset/grid_poi_counts.csv'
 
 # 配置滑动窗口参数
-window_size = 4  # 窗口大小（周）
+window_size = 52  # 窗口大小（周）
 step_size = 1  # 步长（周）
 
 # 创建输出目录
@@ -49,10 +47,9 @@ def extract_date_from_filename(filename):
     从文件名中提取日期。
     假设文件名格式为 'trips_YYYY-MM-DD.csv'
     """
-    date_str = filename.split('_')[-1].replace('.csv', '')
-    matcher = re.compile(r'\d{4}-\d{2}-\d{2}')
-    if matcher.fullmatch(date_str):
-        return pd.to_datetime(date_str)
+    matcher = re.search(r'\d{4}-\d{2}-\d{2}', filename)
+    if matcher:
+        return pd.to_datetime(matcher.group())
     return None
 
 
@@ -62,7 +59,7 @@ def add_time_features(trip_file, trips):
 
     参数:
     trip_file (str): 文件名
-    trips (DataFrame): 行程数据
+    finished_trips (DataFrame): 行程数据
 
     返回:
     DataFrame: 添加了时间特征的行程数据
@@ -273,6 +270,9 @@ def main():
         final_path = os.path.join(model_path, model_file_name)
     joblib.dump(best_model, final_path)
     # 打印最佳模型评估结果
+    logging.info("----------------------")
+    logging.info("----------------------")
+    logging.info("----------------------")
     logging.info("最佳模型评估结果:")
     logging.info(f"最佳模型时间窗口为{best_model_start_date}到{best_model_end_date}")
     importances = best_model.feature_importances_  # 计算特征重要性
