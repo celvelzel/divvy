@@ -1,17 +1,24 @@
 import joblib
 import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
 from tqdm import tqdm
 import re
 import os
+import logging
+
+# 配置日志记录
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # 模型保存的路径
 model_path = '../../model/rfc_model.pkl'
 # 预测结果保存路径
 output_path = '../../output/reasoning_result'
+# 添加时间特征
+add_time_feature = True
 
 # 输入数据路径
-poi_data_path = '../../output/grid_poi_counts.csv'  # POI 数据路径
-trip_data_path = '../../data/dataset/trip_count'  # 行程数据路径
+poi_data_path = '../../data/dataset/grid_poi_counts.csv'  # POI 数据路径
+trip_data_path = '../../data/finished_trips'  # 行程数据路径
 
 # 加载 POI 数据
 poi_data = pd.read_csv(poi_data_path)
@@ -29,12 +36,51 @@ try:
 except FileExistsError:
     print(f'目录{output_path}已经存在')
 
-for trip_file_path in tqdm(trip_data_path):
-    if trip_data_path.endswith('.csv'):
-        data_path = os.path.join(trip_data_path, trip_file_path)
+
+def extract_date_from_filename(filename):
+    """
+    从文件名中提取日期。
+    假设文件名格式为 'trips_YYYY-MM-DD.csv'
+    """
+    matcher = re.search(r'\d{4}-\d{2}-\d{2}', filename)
+    if matcher:
+        return pd.to_datetime(matcher.group())
+    return None
+
+
+def add_time_features(trip_file, trips):
+    """
+    从文件名中提取日期，并添加时间特征。
+
+    参数:
+    trip_file (str): 文件名
+    finished_trips (DataFrame): 行程数据
+
+    返回:
+    DataFrame: 添加了时间特征的行程数据
+    """
+    try:
+        date = extract_date_from_filename(trip_file)
+        trips['month'] = date.month  # 月份
+        trips['day_of_year'] = date.dayofyear  # 一年中的第几天
+        return trips
+    except Exception as e:
+        logging.error(f"处理文件 {trip_file} 时发生错误: {e}")
+        return trips
+
+
+trip_files = [f for f in os.listdir(trip_data_path) if f.endswith('.csv')]
+for trip_file in tqdm(trip_files):
+    print(trip_file)
+    if trip_file.endswith('.csv'):
+        print(f"正在处理文件：{trip_file}")
+        data_path = os.path.join(trip_data_path, trip_file)
 
         # 加载行程数据
         trip_data = pd.read_csv(data_path)
+        # 添加时间特征
+        if add_time_feature:
+            trip_data = add_time_features(trip_file, trip_data)
         if 'geometry' in trip_data.columns:
             trip_data.drop(columns=['geometry'], inplace=True)
 
@@ -50,7 +96,7 @@ for trip_file_path in tqdm(trip_data_path):
         # 归一化
         scaler = MinMaxScaler()
         x_new_scaled = scaler.fit_transform(x_new)
-        
+
         # 进行预测
         predictions = rfc.predict(x_new_scaled)
 
@@ -65,9 +111,13 @@ for trip_file_path in tqdm(trip_data_path):
         # 定义输出文件名
         filename = os.path.splitext(os.path.basename(data_path))[0]
         date_pattern = r'\d{4}-\d{2}-\d{2}'
-        date = re.search(date_pattern, filename)
-        output_path = f"../../output/reasoning_result/reasoning_result_{date}.csv"
+        match = re.search(date_pattern, filename)
+        if match:
+            date = match.group()
+            output_path = f"../../output/reasoning_result/reasoning_result_{date}.csv"
 
         # 保存更新后的原始数据
         raw_data.to_csv(output_path, index=False)
         print(f"预测结果已保存至文件 {output_path}")
+    else:
+        print('csv file not found')
