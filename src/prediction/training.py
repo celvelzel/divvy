@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # 模型保存路径
 model_path = '../../model'
 # 模型文件名
-model_file_name = 'rfc_model.pkl'
+model_file_name = 'rfr_model.pkl'
 # 测试集比例
 test_size_ratio = 0.3
 # 额外的0行程网格比例
@@ -59,7 +59,7 @@ def add_time_features(trip_file, trips):
 
     参数:
     trip_file (str): 文件名
-    finished_trips (DataFrame): 行程数据
+    trips (DataFrame): 行程数据
 
     返回:
     DataFrame: 添加了时间特征的行程数据

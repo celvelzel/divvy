@@ -10,7 +10,7 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # 模型保存的路径
-model_path = '../../model/rfc_model.pkl'
+model_path = '../../model/rfr_model.pkl'
 # 预测结果保存路径
 output_path = '../../output/reasoning_result'
 # 添加时间特征
@@ -54,7 +54,7 @@ def add_time_features(trip_file, trips):
 
     参数:
     trip_file (str): 文件名
-    finished_trips (DataFrame): 行程数据
+    trips (DataFrame): 行程数据
 
     返回:
     DataFrame: 添加了时间特征的行程数据

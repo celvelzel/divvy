@@ -28,9 +28,9 @@ add_time_feature = True
 divide_date = '2020-12-28'
 
 # 行程数据的目录
-trip_file_path = '../../data/trips/training'
+trip_file_path = '../../data/finished_trips/training'
 # 测试数据的目录
-test_file_path = '../../data/trips/test'
+test_file_path = '../../data/finished_trips/test'
 # POI数据的路径
 poi_file_path = '../../data/dataset/grid_poi_counts.csv'
 

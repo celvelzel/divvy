@@ -5,7 +5,7 @@ import os
 from tqdm import tqdm
 
 # 设定你的行程记录文件 csv 文件夹路径
-folder_path = '../../data/grid'
+folder_path = '../../data/prepare_counted'
 # 结果输出目录
 output_folder = '../../output/trip_count_week'
 
