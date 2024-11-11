@@ -244,7 +244,8 @@ def main():
         x, y = preprocess_data(raw_data)
 
         start_date = extract_date_from_filename(files_in_a_window[0]).date()
-        end_date = extract_date_from_filename(files_in_a_window[-1]).date() + timedelta(weeks=1)
+        end_date = (extract_date_from_filename(files_in_a_window[-1]).date() +
+                    timedelta(weeks=1))
         logging.info(f"正在训练模型：窗口为{start_date}到{end_date}")
         # 训练和评估模型
         x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size_ratio, random_state=0)
