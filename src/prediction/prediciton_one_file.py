@@ -36,16 +36,15 @@ lock = Lock()
 
 # 定义单个时间序列的处理函数
 def process_time_series(column_name):
-    series = data[column_name].dropna()
 
-    if len(series) < 10:
+    if len(data[column_name]) < 10:
         with lock:
             logging.warning(f"列 {column_name} 数据点少于10个，跳过。")
         return None
 
     try:
         # 训练 ARIMA 模型
-        model = ARIMA(series, order=(p, d, q))
+        model = ARIMA(data[column_name], order=(p, d, q))
         results = model.fit()
 
         # 预测未来 52 步
@@ -53,13 +52,12 @@ def process_time_series(column_name):
 
         # 获取预测值及其置信区间
         forecast_values = forecast.predicted_mean
-        confidence_intervals = results.conf_int()
+        confidence_intervals = forecast.conf_int()
         # 创建预测结果 DataFrame
         forecast_df = pd.DataFrame({column_name: forecast_values,
                                     f'Lower Bound{column_name}': confidence_intervals.iloc[:, 0],
                                     f'Upper Bound{column_name}': confidence_intervals.iloc[:, 1]},
                                    index=pd.date_range(start=data.index[-1], periods=prediction_weeks+1, freq='W'))[1:]
-        print(forecast_df.head())
         return forecast_df
     except Exception as e:
         with lock:
