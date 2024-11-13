@@ -7,9 +7,12 @@ import os
 import multiprocessing
 from multiprocessing import Pool, Lock
 import matplotlib.pyplot as plt
+import warnings
 
 # 配置日志记录
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# 警告屏蔽
+warnings.filterwarnings("ignore")
 
 # 设置数据文件路径
 data_file = '../../output/mock_data.csv'
@@ -51,10 +54,10 @@ def find_best_params(data_series):
                     if aic < best_aic:
                         best_aic = aic
                         best_params = (p, d, q)
-                        logging.info(f"已找到更好的参数组合：p={p}, d={d}, q={q}")
+                        logging.info(f"找到更好的参数组合：p={p}, d={d}, q={q}")
                 except:
                     continue
-    logging.info("已找到最佳参数组合...")
+    logging.info("已经找到最佳参数组合...")
     logging.info(f"最佳参数组合为：p={best_params[0]}, d={best_params[1]}, q={best_params[2]}")
     return best_params
 
@@ -67,6 +70,13 @@ def process_time_series(column_name):
         return None
 
     try:
+        if enable_find_best_params:
+            # 寻找最佳参数组合
+            best_params = find_best_params(data[column_name])
+            p = best_params[0]
+            d = best_params[1]
+            q = best_params[2]
+
         # 训练 ARIMA 模型
         model = ARIMA(data[column_name], order=(p, d, q))
         results = model.fit()
@@ -128,12 +138,12 @@ def plot_forecast(original_series, forecast_df, column_name):
 
 # 主程序
 if __name__ == '__main__':
-    if enable_find_best_params:
-        # 寻找最佳参数组合
-        best_params = find_best_params(data['0'])
-        p = best_params[0]
-        d = best_params[1]
-        q = best_params[2]
+    # if enable_find_best_params:
+    #     # 寻找最佳参数组合
+    #     best_params = find_best_params(data['0'])
+    #     p = best_params[0]
+    #     d = best_params[1]
+    #     q = best_params[2]
 
     # 获取预测结果
     logging.info("开始多进程处理时间序列数据...")
