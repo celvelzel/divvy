@@ -34,9 +34,31 @@ prediction_weeks = 52
 lock = Lock()
 
 
+def find_best_params(data_series):
+    # 遍历不同的 p, d, q 组合，选择最优模型
+    best_aic = float('inf')
+    best_params = None
+
+    for p in range(3):
+        for d in range(2):
+            for q in range(3):
+                try:
+                    model = ARIMA(data_series, order=(p, d, q))
+                    results = model.fit()
+                    aic = results.aic
+                    if aic < best_aic:
+                        best_aic = aic
+                        best_params = (p, d, q)
+                        logging.info(f"已找到更好的参数组合：p={p}, d={d}, q={q}")
+                except:
+                    continue
+    logging.info("已找到最佳参数组合...")
+    logging.info(f"最佳参数组合为：p={best_params[0]}, d={best_params[1]}, q={best_params[2]}")
+    return best_params
+
+
 # 定义单个时间序列的处理函数
 def process_time_series(column_name):
-
     if len(data[column_name]) < 10:
         with lock:
             logging.warning(f"列 {column_name} 数据点少于10个，跳过。")
@@ -57,7 +79,8 @@ def process_time_series(column_name):
         forecast_df = pd.DataFrame({column_name: forecast_values,
                                     f'Lower Bound{column_name}': confidence_intervals.iloc[:, 0],
                                     f'Upper Bound{column_name}': confidence_intervals.iloc[:, 1]},
-                                   index=pd.date_range(start=data.index[-1], periods=prediction_weeks+1, freq='W'))[1:]
+                                   index=pd.date_range(start=data.index[-1], periods=prediction_weeks + 1, freq='W'))[
+                      1:]
         return forecast_df
     except Exception as e:
         with lock:
@@ -84,7 +107,8 @@ def plot_forecast(original_series, forecast_df, column_name):
     # 绘制预测数据
     plt.plot(forecast_df.index, forecast_df[column_name], label='Forecast', color='red', linestyle='--')
 
-    plt.fill_between(forecast_df.index, forecast_df[f'Lower Bound{column_name}'], forecast_df[f'Upper Bound{column_name}'], color='pink', alpha=0.3)
+    plt.fill_between(forecast_df.index, forecast_df[f'Lower Bound{column_name}'],
+                     forecast_df[f'Upper Bound{column_name}'], color='pink', alpha=0.3)
 
     # 添加标题和标签
     plt.title(f'ARIMA Forecast for {column_name}')
@@ -102,6 +126,12 @@ def plot_forecast(original_series, forecast_df, column_name):
 
 # 主程序
 if __name__ == '__main__':
+    # 寻找最佳参数组合
+    best_params = find_best_params(data['0'])
+    p = best_params[0]
+    d = best_params[1]
+    q = best_params[2]
+
     # 获取预测结果
     logging.info("开始多进程处理时间序列数据...")
     predictions = process_data_parallel(data)

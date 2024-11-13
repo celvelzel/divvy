@@ -7,10 +7,10 @@ prediction_periods = 104
 # np.random.seed(42)
 
 # 定义日期范围
-date_range = pd.date_range(start='2020-01-01', periods=prediction_periods, freq='W')
+date_range = pd.date_range(start='2020/01/01', periods=prediction_periods, freq='W')
 
 # 定义列名
-columns = ['0', '1']
+columns = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 
 
 # 生成按趋势增长且有周期性的数据
