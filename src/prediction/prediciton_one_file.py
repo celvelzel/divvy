@@ -24,8 +24,10 @@ data = pd.read_csv(data_file, parse_dates=['Date'], index_col='Date')
 # 检查数据
 # logging.info("数据预览：\n%s", data.head())
 
-# 定义 ARIMA 模型参数
+# 自定义 ARIMA 模型参数
 p, d, q = 2, 1, 3
+# 是否启用寻找最佳参数
+enable_find_best_params = True
 
 # 预测周数
 prediction_weeks = 52
@@ -126,11 +128,12 @@ def plot_forecast(original_series, forecast_df, column_name):
 
 # 主程序
 if __name__ == '__main__':
-    # 寻找最佳参数组合
-    best_params = find_best_params(data['0'])
-    p = best_params[0]
-    d = best_params[1]
-    q = best_params[2]
+    if enable_find_best_params:
+        # 寻找最佳参数组合
+        best_params = find_best_params(data['0'])
+        p = best_params[0]
+        d = best_params[1]
+        q = best_params[2]
 
     # 获取预测结果
     logging.info("开始多进程处理时间序列数据...")
