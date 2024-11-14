@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 warnings.filterwarnings("ignore")
 
 # 设置数据文件路径
-data_file = '../../output/mock_data.csv'
+data_file = '../../output/aggregated_trip_counts_test.csv'
 output_file = '../../output/prediction_result/output.csv'
 
 # 创建文件夹
@@ -28,7 +28,7 @@ data = pd.read_csv(data_file, parse_dates=['Date'], index_col='Date')
 # logging.info("数据预览：\n%s", data.head())
 
 # 自定义 ARIMA 模型参数
-p, d, q = 2, 1, 3
+p, d, q = 2, 0, 2
 # 是否启用寻找最佳参数
 enable_find_best_params = True
 
@@ -68,16 +68,16 @@ def process_time_series(column_name):
         with lock:
             logging.warning(f"列 {column_name} 数据点少于10个，跳过。")
         return None
-
     try:
-        if enable_find_best_params:
-            # 寻找最佳参数组合
-            best_params = find_best_params(data[column_name])
-            p = best_params[0]
-            d = best_params[1]
-            q = best_params[2]
+        # if enable_find_best_params:
+        #     # 寻找最佳参数组合
+        #     best_params = find_best_params(data[column_name])
+        #     p = best_params[0]
+        #     d = best_params[1]
+        #     q = best_params[2]
 
         # 训练 ARIMA 模型
+        logging.info(f"训练 ARIMA 模型，列 {column_name}，数据：\n{data[column_name].head()}")
         model = ARIMA(data[column_name], order=(p, d, q))
         results = model.fit()
 
@@ -87,12 +87,20 @@ def process_time_series(column_name):
         # 获取预测值及其置信区间
         forecast_values = forecast.predicted_mean
         confidence_intervals = forecast.conf_int()
+
+        forecast_dates = pd.date_range(start=data.index[-1], periods=prediction_weeks + 1, freq='W')[1:]
+
+        forecast_values.index = forecast_dates
+        confidence_intervals.index = forecast_dates
+
+        logging.info(f'{column_name}的预测值为{forecast_values.head()}')
+
         # 创建预测结果 DataFrame
         forecast_df = pd.DataFrame({column_name: forecast_values,
-                                    f'Lower Bound{column_name}': confidence_intervals.iloc[:, 0],
-                                    f'Upper Bound{column_name}': confidence_intervals.iloc[:, 1]},
-                                   index=pd.date_range(start=data.index[-1], periods=prediction_weeks + 1, freq='W'))[
-                      1:]
+                                    f'Lower Bound {column_name}': confidence_intervals.iloc[:, 0],
+                                    f'Upper Bound {column_name}': confidence_intervals.iloc[:, 1]},
+                                   index=forecast_dates)
+        logging.info(f'{column_name}的dateframe为\n{forecast_df.head()}')
         return forecast_df
     except Exception as e:
         with lock:
@@ -119,8 +127,8 @@ def plot_forecast(original_series, forecast_df, column_name):
     # 绘制预测数据
     plt.plot(forecast_df.index, forecast_df[column_name], label='Forecast', color='red', linestyle='--')
 
-    plt.fill_between(forecast_df.index, forecast_df[f'Lower Bound{column_name}'],
-                     forecast_df[f'Upper Bound{column_name}'], color='pink', alpha=0.3)
+    plt.fill_between(forecast_df.index, forecast_df[f'Lower Bound {column_name}'],
+                     forecast_df[f'Upper Bound {column_name}'], color='pink', alpha=0.3)
 
     # 添加标题和标签
     plt.title(f'ARIMA Forecast for {column_name}')
@@ -138,12 +146,12 @@ def plot_forecast(original_series, forecast_df, column_name):
 
 # 主程序
 if __name__ == '__main__':
-    # if enable_find_best_params:
-    #     # 寻找最佳参数组合
-    #     best_params = find_best_params(data['0'])
-    #     p = best_params[0]
-    #     d = best_params[1]
-    #     q = best_params[2]
+    if enable_find_best_params:
+        # 寻找最佳参数组合
+        best_params = find_best_params(data['7'])
+        p = best_params[0]
+        d = best_params[1]
+        q = best_params[2]
 
     # 获取预测结果
     logging.info("开始多进程处理时间序列数据...")
