@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 warnings.filterwarnings("ignore")
 
 # 设置数据文件路径
-data_file = '../../output/aggregated_trip_counts.csv'
+data_file = '../../output/aggregated_trip_counts_test.csv'
 output_file = '../../output/prediction_result/output.csv'
 
 # 创建文件夹
@@ -30,7 +30,9 @@ data = pd.read_csv(data_file, parse_dates=['Date'], index_col='Date')
 # 自定义 ARIMA 模型参数
 p, d, q = 1, 0, 1
 # 是否启用寻找最佳参数
-enable_find_best_params = False
+enable_find_best_params = True
+# 最佳参数列名
+best_params_column_name = '2'
 
 # 预测周数
 prediction_weeks = 52
@@ -88,19 +90,18 @@ def process_time_series(column_name):
         forecast_values = forecast.predicted_mean
         confidence_intervals = forecast.conf_int()
 
-        forecast_dates = pd.date_range(start=data.index[-1], periods=prediction_weeks, freq='W')[0:] + pd.Timedelta(days=1)
+        forecast_dates = pd.date_range(start=data.index[-1], periods=prediction_weeks, freq='W')[0:] + pd.Timedelta(
+            days=1)
 
         forecast_values.index = forecast_dates
         confidence_intervals.index = forecast_dates
-
-        logging.info(f'{column_name}的预测值为{forecast_values.head()}')
 
         # 创建预测结果 DataFrame
         forecast_df = pd.DataFrame({column_name: forecast_values,
                                     f'Lower Bound {column_name}': confidence_intervals.iloc[:, 0],
                                     f'Upper Bound {column_name}': confidence_intervals.iloc[:, 1]},
                                    index=forecast_dates)
-        logging.info(f'{column_name}的dateframe为\n{forecast_df.head()}')
+
         return forecast_df
     except Exception as e:
         with lock:
@@ -148,7 +149,7 @@ def plot_forecast(original_series, forecast_df, column_name):
 if __name__ == '__main__':
     if enable_find_best_params:
         # 寻找最佳参数组合
-        best_params = find_best_params(data['7'])
+        best_params = find_best_params(data[best_params_column_name])
         p = best_params[0]
         d = best_params[1]
         q = best_params[2]
