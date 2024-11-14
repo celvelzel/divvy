@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 warnings.filterwarnings("ignore")
 
 # 设置数据文件路径
-data_file = '../../output/aggregated_trip_counts_test.csv'
+data_file = '../../output/aggregated_trip_counts.csv'
 output_file = '../../output/prediction_result/output.csv'
 
 # 创建文件夹
@@ -28,9 +28,9 @@ data = pd.read_csv(data_file, parse_dates=['Date'], index_col='Date')
 # logging.info("数据预览：\n%s", data.head())
 
 # 自定义 ARIMA 模型参数
-p, d, q = 2, 0, 2
+p, d, q = 1, 0, 1
 # 是否启用寻找最佳参数
-enable_find_best_params = True
+enable_find_best_params = False
 
 # 预测周数
 prediction_weeks = 52
@@ -88,7 +88,7 @@ def process_time_series(column_name):
         forecast_values = forecast.predicted_mean
         confidence_intervals = forecast.conf_int()
 
-        forecast_dates = pd.date_range(start=data.index[-1], periods=prediction_weeks + 1, freq='W')[1:]
+        forecast_dates = pd.date_range(start=data.index[-1], periods=prediction_weeks, freq='W')[0:] + pd.Timedelta(days=1)
 
         forecast_values.index = forecast_dates
         confidence_intervals.index = forecast_dates
