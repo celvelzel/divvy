@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 warnings.filterwarnings("ignore")
 
 # 设置数据文件路径
-data_file = '../../output/aggregated_trip_counts_test.csv'
+data_file = '../../output/aggregated_trip_counts/aggregated_trip_counts_docked_1.csv'
 output_file = '../../output/prediction_result/output.csv'
 
 # 创建文件夹
@@ -28,11 +28,13 @@ data = pd.read_csv(data_file, parse_dates=['Date'], index_col='Date')
 # logging.info("数据预览：\n%s", data.head())
 
 # 自定义 ARIMA 模型参数
-p, d, q = 1, 0, 1
+p, d, q = 2, 0, 2
 # 是否启用寻找最佳参数
-enable_find_best_params = True
+enable_find_best_params = False
+# 是否绘制预测结果图表
+enable_plot = True
 # 最佳参数列名
-best_params_column_name = '2'
+best_params_column_name = '1'
 
 # 预测周数
 prediction_weeks = 52
@@ -177,7 +179,8 @@ if __name__ == '__main__':
         data = data.groupby(data.index).first()
 
         # 绘制预测结果图表
-        plot_forecast(original_series, forecast_df, column_name)
+        if enable_plot:
+            plot_forecast(original_series, forecast_df, column_name)
 
     # 保存最终结果
     data.to_csv(output_file, encoding='utf-8')
