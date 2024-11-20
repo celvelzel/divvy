@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 warnings.filterwarnings("ignore")
 
 # 设置数据文件路径
-data_file = '../../output/aggregated_trip_counts/aggregated_trip_counts_docked_1.csv'
+data_file = '../../output/aggregated_trip_counts/aggregated_trip_counts_docked_2.csv'
 output_file = f'../../output/prediction_result/{os.path.splitext(os.path.basename(data_file))[0]}_output.csv'
 
 # 创建文件夹
