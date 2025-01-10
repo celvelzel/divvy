@@ -53,7 +53,7 @@ def split_dataframe_by_columns(input_file, output_folder, num_tables):
 
 if __name__ == '__main__':
     # 输入文件路径
-    input_file = '../../data/aggregated_trip_counts/aggregated_trip_counts_docked.csv'
+    input_file = '../../data/aggregated_trip_counts/aggregated_trip_counts_electric.csv'
 
     # 输出文件夹路径
     output_folder = '../../output/aggregated_trip_counts'

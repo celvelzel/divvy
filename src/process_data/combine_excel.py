@@ -5,45 +5,60 @@ import glob
 
 def combine_csv_files(input_folder, output_file):
     """
-    ¶ÁÈ¡Ö¸¶¨ÎÄ¼ş¼ĞÖĞµÄËùÓĞ CSV ÎÄ¼ş£¬²¢½«ËüÃÇÖØĞÂ×éºÏÔÚÒ»Æğ£¬È·±£µÚÒ»ÁĞ²»ÖØ¸´¡£
+    åˆå¹¶æŒ‡å®šæ–‡ä»¶å¤¹ä¸­çš„æ‰€æœ‰ CSV æ–‡ä»¶ï¼Œé¦–åˆ—æ˜¯ç›¸åŒçš„æ—¥æœŸåˆ—ï¼Œä¿ç•™é¦–åˆ—å¹¶å°†å…¶ä»–åˆ—åˆå¹¶åˆ°ä¸€ä¸ªæ–‡ä»¶ä¸­ã€‚
 
-    :param input_folder: ÊäÈëÎÄ¼ş¼ĞÂ·¾¶£¬°üº¬Òª×éºÏµÄ CSV ÎÄ¼ş
-    :param output_file: Êä³öÎÄ¼şÂ·¾¶£¬×éºÏºóµÄ CSV ÎÄ¼ş
+    :param input_folder: è¾“å…¥æ–‡ä»¶å¤¹è·¯å¾„ï¼ŒåŒ…å«è¦åˆå¹¶çš„ CSV æ–‡ä»¶
+    :param output_file: è¾“å‡ºæ–‡ä»¶è·¯å¾„ï¼Œåˆå¹¶åçš„ CSV æ–‡ä»¶
     """
-    # »ñÈ¡ÎÄ¼ş¼ĞÖĞËùÓĞµÄ CSV ÎÄ¼ş
+    # è·å–æ–‡ä»¶å¤¹ä¸­æ‰€æœ‰çš„ CSV æ–‡ä»¶
     csv_files = glob.glob(os.path.join(input_folder, '*.csv'))
 
     if not csv_files:
         raise FileNotFoundError("No CSV files found in the specified folder.")
 
-    # ¶ÁÈ¡µÚÒ»¸öÎÄ¼şÒÔ»ñÈ¡µÚÒ»ÁĞ
-    first_file = pd.read_csv(csv_files[0])
-    first_column_name = first_file.columns[0]
+    # åˆå§‹åŒ–ä¸€ä¸ªç©ºçš„ DataFrame æ¥å­˜å‚¨åˆå¹¶åçš„æ•°æ®
+    combined_df = None
 
-    # ³õÊ¼»¯Ò»¸ö¿ÕµÄ DataFrame À´´æ´¢×éºÏºóµÄÊı¾İ
-    combined_df = pd.DataFrame(columns=first_file.columns)
-
-    # Öğ¸ö¶ÁÈ¡²¢ºÏ²¢ CSV ÎÄ¼ş
+    # é€ä¸ªè¯»å–å¹¶åˆå¹¶ CSV æ–‡ä»¶
     for file in csv_files:
         df = pd.read_csv(file)
-        # Ö»±£ÁôµÚÒ»ÁĞºÍÎ´¼û¹ıµÄÆäËûÁĞ
-        new_columns = [col for col in df.columns if col not in combined_df.columns or col == first_column_name]
-        combined_df = pd.concat([combined_df, df[new_columns]], ignore_index=True)
 
-    # È¥³ıÖØ¸´µÄµÚÒ»ÁĞ
-    combined_df = combined_df.loc[:, ~combined_df.columns.duplicated()]
+        # è¿‡æ»¤æ‰åˆ—åä¸­åŒ…å« "Upper Bound" å’Œ "Lower Bound" çš„åˆ—
+        columns_to_keep = [col for col in df.columns if "Upper Bound" not in col and "Lower Bound" not in col]
+        df = df[columns_to_keep]
 
-    # ±£´æ×éºÏºóµÄ DataFrame µ½ĞÂµÄ CSV ÎÄ¼ş
+        # å¦‚æœæ˜¯ç¬¬ä¸€ä¸ªæ–‡ä»¶ï¼Œç›´æ¥å°†å…¶ä½œä¸ºåˆå¹¶çš„åŸºç¡€
+        if combined_df is None:
+            combined_df = df
+        else:
+            # ç¡®ä¿é¦–åˆ—ï¼ˆæ—¥æœŸåˆ—ï¼‰ç›¸åŒ
+            if not combined_df.iloc[:, 0].equals(df.iloc[:, 0]):
+                raise ValueError("The first column (date column) of the files do not match.")
+
+            # å°†å½“å‰æ–‡ä»¶çš„å…¶ä»–åˆ—åˆå¹¶åˆ° combined_df ä¸­
+            # for col in df.columns[1:]:
+            #     # å¦‚æœåˆ—åé‡å¤ï¼Œåˆ™é‡å‘½å
+            #     if col in combined_df.columns:
+            #         new_col_name = f"{col}_{os.path.basename(file).split('.')[0]}"
+            #         combined_df[new_col_name] = df[col]
+            #     else:
+            #         combined_df[col] = df[col]
+
+            # å°†å½“å‰æ–‡ä»¶çš„å…¶ä»–åˆ—åˆå¹¶åˆ° combined_df ä¸­
+            # ä½¿ç”¨ pd.concat ä¸€æ¬¡æ€§åˆå¹¶æ‰€æœ‰åˆ—
+            combined_df = pd.concat([combined_df, df.iloc[:, 1:]], axis=1)
+
+    # ä¿å­˜åˆå¹¶åçš„ DataFrame åˆ°æ–°çš„ CSV æ–‡ä»¶
     combined_df.to_csv(output_file, index=False)
     print(f'Saved combined file to {output_file}')
 
 
 if __name__ == '__main__':
-    # ÊäÈëÎÄ¼ş¼ĞÂ·¾¶
-    input_folder = 'path/to/your/output/folder'
+    # è¾“å…¥æ–‡ä»¶å¤¹è·¯å¾„
+    input_folder = '../../output/prediction_result/docked'
 
-    # Êä³öÎÄ¼şÂ·¾¶
-    output_file = 'path/to/your/combined_output.csv'
+    # è¾“å‡ºæ–‡ä»¶è·¯å¾„
+    output_file = '../../output/final_result/final_result_docked.csv'
 
-    # µ÷ÓÃº¯Êı
+    # è°ƒç”¨å‡½æ•°
     combine_csv_files(input_folder, output_file)
