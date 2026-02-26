@@ -1,133 +1,159 @@
-# Divvy 共享单车需求预测
+# Divvy Bike-Share Demand Prediction
 
-基于芝加哥 Divvy 共享单车数据与城市兴趣点（POI）数据，使用随机森林回归模型与滑动窗口时间序列验证，对各空间网格单元的单车行程需求进行预测。
-
----
-
-## 项目概述
-
-本项目包含两个核心功能：
-
-1. **数据爬取与预处理**：从 Divvy Bikes 官网抓取站点数据，对原始行程记录进行清洗、格式转换与时间/空间聚合。
-2. **时间序列需求预测**：将芝加哥城市 POI 数据与历史行程数据融合，基于 500 m × 500 m 空间网格，利用随机森林回归器结合滑动窗口策略训练预测模型，对行程量为零的网格进行需求推断。
+A geospatial machine-learning project that forecasts weekly bike-trip demand across Chicago's Divvy bike-share network. The model combines urban Points-of-Interest (POI) features with historical trip records, partitioned into 500 m × 500 m spatial grid cells, and trains a Random Forest regressor using a sliding-window time-series validation strategy.
 
 ---
 
-## 项目结构
+## Table of Contents
 
-```
+- [Overview](#overview)
+- [Repository Structure](#repository-structure)
+- [Data Description](#data-description)
+- [Dependencies](#dependencies)
+- [Usage](#usage)
+- [Model Evaluation](#model-evaluation)
+
+---
+
+## Overview
+
+The project is divided into two main components:
+
+1. **Data Crawling & Preprocessing** — Fetches station metadata from the Divvy Bikes website and cleans, converts, and aggregates raw trip records by time period and rideable type.
+2. **Demand Forecasting** — Merges historical trip counts with city-wide POI data on a 500 m grid, then trains and validates a `RandomForestRegressor` with a 52-week sliding window. The trained model is subsequently used to infer latent demand for grid cells that recorded zero trips.
+
+---
+
+## Repository Structure
+
+```text
 divvy/
-├── data/                          # 数据目录
-│   ├── chicago/                   # 芝加哥边界 Shapefile
-│   ├── poi/                       # 兴趣点 Shapefile（商业、医疗、教育等10余类）
-│   ├── finished_trips/            # 按周聚合的网格行程统计 CSV
-│   ├── aggregated_trip_counts/    # 按车型（电动/桩式）聚合的行程统计
-│   ├── dataset/                   # 预处理后的网格 POI 统计数据
-│   ├── road_weight/               # 道路权重数据
-│   └── material/                  # 原始站点及行程样本数据
+├── data/
+│   ├── chicago/                    # Chicago boundary Shapefile (for grid clipping)
+│   ├── poi/                        # POI Shapefiles (retail, healthcare, education,
+│   │                               #   sports, culture, parks, transit, metro,
+│   │                               #   road network, land use, demographics)
+│   ├── finished_trips/             # Weekly per-grid trip counts (CSV)
+│   ├── aggregated_trip_counts/     # Trip counts aggregated by rideable type
+│   │                               #   (electric / docked)
+│   ├── dataset/                    # Pre-computed per-grid POI category counts
+│   ├── road_weight/                # Road weight / capacity data
+│   └── material/                   # Raw station data (JSON/XLSX) and trip samples
+│                                   #   (CSV/XLSM)
 ├── src/
-│   ├── process_data/              # 数据预处理脚本
-│   │   ├── add_station_coord.py   # 为行程数据添加站点坐标
-│   │   ├── convert_data.py        # 数据格式转换
-│   │   ├── divide_by_month.py     # 按月拆分数据
-│   │   ├── divide_by_week.py      # 按周拆分数据
-│   │   ├── divide_by_rideable_type.py  # 按车型拆分数据
-│   │   ├── divvy_json2excel.py    # 站点 JSON 转 Excel
-│   │   ├── export_grid.py         # 生成地理网格
-│   │   ├── tripCountPerHour.py    # 按小时聚合行程数量
-│   │   ├── draw_CDF_chart.py      # 绘制 CDF 分布图
-│   │   ├── draw_PDF_chart.py      # 绘制 PDF 分布图
-│   │   └── ...                    # 其他辅助脚本
-│   └── prediction/                # 预测模型脚本
-│       ├── grid_trip.py           # 统计各网格单元的行程数量
-│       ├── grid_poi.py            # 统计各网格单元的 POI 数量
-│       ├── aggregate_trip_count.py # 聚合多文件行程统计
-│       ├── training.py            # 模型训练（随机森林 + 滑动窗口）
-│       ├── reasoning.py           # 对零行程网格进行需求推断
-│       └── ...                    # 其他辅助脚本
-├── output/                        # 模型输出（已在 .gitignore 中忽略）
-├── model/                         # 训练好的模型文件（已在 .gitignore 中忽略）
+│   ├── process_data/               # Data preprocessing scripts
+│   │   ├── add_station_coord.py    # Attach station coordinates to trip records
+│   │   ├── convert_data.py         # Format conversion utilities
+│   │   ├── divide_by_month.py      # Split trip data by month
+│   │   ├── divide_by_week.py       # Split trip data by week
+│   │   ├── divide_by_rideable_type.py  # Split trip data by bike type
+│   │   ├── divvy_json2excel.py     # Convert station JSON to Excel
+│   │   ├── export_grid.py          # Generate the geographic grid
+│   │   ├── tripCountPerHour.py     # Aggregate trip counts per hour
+│   │   ├── draw_CDF_chart.py       # Plot cumulative distribution function
+│   │   ├── draw_PDF_chart.py       # Plot probability density function
+│   │   └── ...                     # Additional helper scripts
+│   └── prediction/                 # Forecasting pipeline scripts
+│       ├── grid_trip.py            # Count trips per grid cell
+│       ├── grid_poi.py             # Count POIs per grid cell
+│       ├── aggregate_trip_count.py # Aggregate counts across multiple files
+│       ├── training.py             # Model training (Random Forest + sliding window)
+│       ├── reasoning.py            # Infer demand for zero-trip grid cells
+│       └── ...                     # Additional helper scripts
+├── output/                         # Generated outputs (git-ignored)
+├── model/                          # Saved model files (git-ignored)
 └── readme.md
 ```
 
 ---
 
-## 数据说明
+## Data Description
 
-| 数据目录 | 内容 |
+| Directory | Contents |
 |---|---|
-| `chicago/` | 芝加哥行政边界 Shapefile，用于空间裁剪网格 |
-| `poi/` | 各类城市 POI（商业、医疗、教育、体育、文化、公园、公交站、地铁站、路网、土地利用、人口属性等） |
-| `finished_trips/` | 以周为单位的网格行程计数，文件命名格式：`trip_counts_week_YYYY-MM-DD.csv` |
-| `aggregated_trip_counts/` | 分车型（电动/桩式）的行程统计汇总 |
-| `dataset/` | 每个网格单元的 POI 分类计数，由 `grid_poi.py` 生成 |
-| `road_weight/` | 道路权重/通行能力数据 |
-| `material/` | 原始站点信息（JSON/XLSX）及历史行程样本（CSV/XLSM） |
+| `chicago/` | Chicago administrative boundary Shapefile used for spatial grid clipping |
+| `poi/` | POI Shapefiles across 10+ urban categories: retail, healthcare, education, sports, culture, parks, bus stops, metro stations, road network, land use, and demographic attributes |
+| `finished_trips/` | Weekly per-grid trip counts; file naming convention: `trip_counts_week_YYYY-MM-DD.csv` |
+| `aggregated_trip_counts/` | Trip count summaries split by rideable type (`electric`, `docked`) |
+| `dataset/` | Per-grid POI category counts produced by `grid_poi.py` |
+| `road_weight/` | Road weight and capacity data |
+| `material/` | Raw station information (JSON/XLSX) and historical trip samples (CSV/XLSM) |
 
 ---
 
-## 技术依赖
+## Dependencies
 
-- Python 3.x
-- pandas / numpy
-- geopandas / shapely
-- scikit-learn（RandomForestRegressor、MinMaxScaler）
-- joblib
-- tqdm
-- openpyxl
+| Package | Purpose |
+|---|---|
+| `pandas`, `numpy` | Tabular data manipulation |
+| `geopandas`, `shapely` | Geospatial operations and coordinate transforms |
+| `scikit-learn` | `RandomForestRegressor`, `MinMaxScaler`, `train_test_split` |
+| `joblib` | Model serialization |
+| `tqdm` | Progress reporting |
+| `openpyxl` | Excel file I/O |
 
----
-
-## 使用流程
-
-### 1. 数据预处理
+Install all dependencies with:
 
 ```bash
-# 将原始行程数据按周拆分
+pip install pandas numpy geopandas shapely scikit-learn joblib tqdm openpyxl
+```
+
+---
+
+## Usage
+
+Follow the four steps below in order.
+
+### Step 1 — Data Preprocessing
+
+```bash
+# Split raw trip records into weekly files
 python src/process_data/divide_by_week.py
 
-# 为行程数据补充站点坐标
+# Attach station coordinates to trip records
 python src/process_data/add_station_coord.py
 ```
 
-### 2. 空间特征生成
+### Step 2 — Spatial Feature Generation
 
 ```bash
-# 统计各 500m 网格内的行程数量（生成至 output/trip_count_week/）
+# Count trips per 500 m grid cell (output: output/trip_count_week/)
 python src/prediction/grid_trip.py
 
-# 统计各 500m 网格内的 POI 数量（生成至 output/grid_poi_counts.csv）
+# Count POIs per 500 m grid cell (output: output/grid_poi_counts.csv)
 python src/prediction/grid_poi.py
 
-# 将 grid_poi_counts.csv 复制到 data/dataset/ 供后续使用
+# Copy the generated file to the dataset directory
+cp output/grid_poi_counts.csv data/dataset/grid_poi_counts.csv
 ```
 
-### 3. 模型训练
+### Step 3 — Model Training
 
 ```bash
 python src/prediction/training.py
 ```
 
-训练流程：
-- 以 52 周为窗口大小、逐周滑动，对历史数据执行时间序列交叉验证
-- 特征：各类 POI 数量、月份、一年中第几天
-- 目标变量：各网格单元的周行程数量
-- 以 NMAE（归一化平均绝对误差）最低为标准保留最优模型
-- 最优模型自动保存至 `model/rfr_model.pkl`
+The training procedure:
 
-### 4. 需求推断
+- Iterates over the trip files using a **52-week sliding window** (step size: 1 week).
+- **Features**: per-category POI counts, `month`, and `day_of_year`.
+- **Target**: weekly trip count per grid cell.
+- Retains the model with the lowest **NMAE** (Normalized Mean Absolute Error) across all windows.
+- Saves the best model to `model/rfr_model.pkl`.
+
+### Step 4 — Demand Inference
 
 ```bash
 python src/prediction/reasoning.py
 ```
 
-对训练数据中行程量为零的网格单元，使用训练好的模型预测潜在需求，结果保存至 `output/reasoning_result/`。
+Loads the saved model and predicts latent trip demand for every grid cell that recorded zero trips. Results are written to `output/reasoning_result/`.
 
 ---
 
-## 模型评估指标
+## Model Evaluation
 
-| 指标 | 说明 |
+| Metric | Description |
 |---|---|
-| R²（决定系数） | 模型拟合优度，越接近 1 越好 |
-| NMAE（归一化平均绝对误差） | MAE / 数据均值，越小越好 |
+| **R²** (Coefficient of Determination) | Goodness of fit; higher is better (maximum 1.0) |
+| **NMAE** (Normalized Mean Absolute Error) | MAE divided by the mean of the target values; lower is better |
